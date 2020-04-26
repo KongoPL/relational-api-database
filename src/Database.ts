@@ -1,7 +1,9 @@
-class Database
+
+export default class Database
 {
-	constructor()
+	getNumber(num: number)
 	{
-		console.log("Hello");
+		return num;
 	}
 }
+
