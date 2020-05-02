@@ -37,25 +37,21 @@ export default class MemoryApi extends DatabaseApi
 		{
 			const operator = condition[0].toLowerCase();
 
-			if(['and', 'or', 'not'].some((v) => operator))
+			if(['and', 'or', 'not', 'or not'].some((v) => v === operator))
 			{
-				let meetsCondition;
-
 				for (let i = 1; i < condition.length; i++)
 				{
-					meetsCondition = this.doesRecordMeetsConditions(record, <ICondition>condition[i]);
+					let meetConditions = this.doesRecordMeetsConditions(record, <ICondition>condition[i]);
 
-					if(meetsCondition && operator != 'and')
-						break;
-					else if(!meetsCondition && operator == 'and')
+					if(meetConditions && ['or', 'or not', 'not'].some((v) => v === operator))
+						return operator === 'or';
+					else if(!meetConditions && operator === 'and')
 						return false;
 				}
 
-				return (operator === 'and'
-					|| operator === 'or' && meetsCondition
-					|| operator === 'not' && !meetsCondition);
+				return (operator != 'or');
 			}
-			else if(['between', 'not between'].some((v) => operator))
+			else if(['between', 'not between'].some((v) => v === operator))
 			{
 				let field = <string>condition[1],
 					min = condition[2],
@@ -65,7 +61,7 @@ export default class MemoryApi extends DatabaseApi
 				return (operator === 'between' && isBetween
 					|| operator === 'not between' && !isBetween);
 			}
-			else if(['in', 'not in'].some((v) => operator))
+			else if(['in', 'not in'].some((v) => v === operator))
 			{
 				let fields = (Array.isArray(condition[1]) ? condition[1] : [condition[1]]),
 					values = (typeof condition[2] === "object" ? condition[2] : {[<string>condition[1]]: condition[2]});
@@ -81,7 +77,7 @@ export default class MemoryApi extends DatabaseApi
 
 				return (operator !== 'in');
 			}
-			else if(['like', 'or like', 'not like', 'or not like'].some((v) => operator))
+			else if(['like', 'or like', 'not like', 'or not like'].some((v) => v === operator))
 			{
 				let field = <string>condition[1],
 					values = (Array.isArray(condition[2]) ? condition[2] : [condition[2]]);
@@ -102,7 +98,7 @@ export default class MemoryApi extends DatabaseApi
 
 				return ['like', 'not like'].some((v) => v == operator);
 			}
-			else if(['>', '>=', '<', '<=', '=', '!='].some((v) => operator))
+			else if(['>', '>=', '<', '<=', '=', '!='].some((v) => v === operator))
 			{
 				let field = <string>condition[1];
 
