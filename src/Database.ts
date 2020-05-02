@@ -1,9 +1,10 @@
+import DatabaseApi from "./DatabaseApi";
+import DatabaseCache from "./DatabaseCache";
 
 export default class Database
 {
-	getNumber(num: number)
-	{
-		return num;
-	}
-}
+	constructor(private api: DatabaseApi, private cache?: DatabaseCache)
+	{}
 
+
+}
