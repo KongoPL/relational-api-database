@@ -4,13 +4,31 @@ export default class QueryRequest
 	public table: string = '';
 	public conditions: ICondition = [];
 	// public order: IOrder
+
+	constructor(params?: {table?: string, conditions?: ICondition})
+	{
+		for(let key in params)
+			if(this.hasOwnProperty(key))
+				this[key] = params[key];
+	}
+
+	public isValid()
+	{
+		return typeof this.table === 'string';
+	}
+
+	 public hasConditions()
+	 {
+	 	return (typeof this.conditions === 'object' && Array.isArray(this.conditions) && this.conditions.length > 0
+		|| typeof this.conditions === 'object' && !Array.isArray(this.conditions));
+	 }
 }
 
 export type ICondition = [
-	string,
+	'and' | 'or' | 'not' | 'or not',
 	...(IConditionParameters | ICondition)[]
 ] | [
-	'between' | 'not between' | 'in' | 'not in' | 'like' | 'or like' | 'not like' | 'or not like',
+	'between' | 'not between' | 'like' | 'or like' | 'not like' | 'or not like',
 	string | string[],
 	...any[]
 ] | [

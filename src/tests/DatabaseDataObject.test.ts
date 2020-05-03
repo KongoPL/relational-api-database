@@ -1,4 +1,3 @@
-import Database from "../Database";
 import User from "./data-types/User";
 
 test('User full name is John Doe', () => {

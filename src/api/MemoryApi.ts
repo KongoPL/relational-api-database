@@ -13,10 +13,16 @@ export default class MemoryApi extends DatabaseApi
 
 	getData(query: QueryRequest)
 	{
-		const data = JSON.parse(JSON .stringify(this.getTable(query.table)));
+		if(!query.isValid())
+			throw new Error(`Query is not valid!`);
+
+		let data = JSON.parse(JSON.stringify(this.getTable(query.table)));
 
 		if(!data)
 			throw new Error(`Table ${query.table} does not exists!`);
+
+		if(query.hasConditions())
+			data = data.filter((r) => this.doesRecordMeetsConditions(r, query.conditions));
 
 		return data;
 	}
@@ -61,22 +67,6 @@ export default class MemoryApi extends DatabaseApi
 				return (operator === 'between' && isBetween
 					|| operator === 'not between' && !isBetween);
 			}
-			else if(['in', 'not in'].some((v) => v === operator))
-			{
-				let fields = (Array.isArray(condition[1]) ? condition[1] : [condition[1]]),
-					values = (typeof condition[2] === "object" ? condition[2] : {[<string>condition[1]]: condition[2]});
-
-				for (let field of fields)
-				{
-					if(field in values === false)
-						throw new Error(`There are no values for field ${field}!`);
-
-					if(values[field].some(record[field]))
-						return (operator === 'in');
-				}
-
-				return (operator !== 'in');
-			}
 			else if(['like', 'or like', 'not like', 'or not like'].some((v) => v === operator))
 			{
 				let field = <string>condition[1],
@@ -113,39 +103,11 @@ export default class MemoryApi extends DatabaseApi
 			{
 				const values = Array.isArray(condition[field]) ? condition[field] : [condition[field]];
 
-				for(let value of values)
-				{
-					if(record[field] == value)
-						return true;
-				}
-
-				return false;
+				return values.some((v) => v == record[field]);
 			}
 		}
 
-		return true;
-	}
 
-
-	private doesRecordMeetsConditionsByParameters(record: any, conditions: ICondition): boolean
-	{
-		if(typeof conditions === "object" && Array.isArray(conditions))
-			throw new Error(`Conditions should be an object!`);
-
-		// Simple parameters check:
-		for(let key in conditions)
-		{
-			if(key in record === false)
-				throw new Error(`Field ${key} does not exists in record!`);
-
-			const conditionValue = conditions[key];
-
-			if(Array.isArray(conditionValue) && conditionValue.every((v) => record[key] == v) === false
-				|| !Array.isArray(conditionValue) && record[key] != conditionValue)
-				return false;
-		}
-
-
-		return true;
+		return false;
 	}
 }
