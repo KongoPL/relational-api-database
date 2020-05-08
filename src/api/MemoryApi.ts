@@ -74,19 +74,19 @@ export default class MemoryApi extends DatabaseApi
 
 				for (let value of values)
 				{
-					const valueRegex = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+					const valueRegex = value.replace(/[*+?^${}()|[\]\\]/g, '\\$&')
 						.replace(/%/g, '.*')
 						.replace(/_/g, '.');
 
-					const matchesCondition = new RegExp(`/^${valueRegex}$/`).test(record[field]);
+					const matchesCondition = new RegExp(`^${valueRegex}$`).test(record[field]);
 
-					if(matchesCondition && ['or like', 'or not like'].some((v) => v == operator))
+					if(matchesCondition && ['or like', 'or not like', 'not like'].some((v) => v == operator))
 						return (operator == 'or like');
-					else if(!matchesCondition && ['like', 'not like'].some((v) => v == operator))
-						return (operator == 'not like');
+					else if(!matchesCondition && ['like'].some((v) => v == operator))
+						return false;
 				}
 
-				return ['like', 'not like'].some((v) => v == operator);
+				return operator != 'or like';
 			}
 			else if(['>', '>=', '<', '<=', '=', '!='].some((v) => v === operator))
 			{

@@ -144,15 +144,235 @@ test('Filtering by "not between" operator works', () => {
 		expect(row.age < 20 || 30 < row.age).toBeTruthy();
 });
 
-test.todo('Filtering by "like" operator works');
-test.todo('Filtering by "or like" operator works');
-test.todo('Filtering by "not like" operator works');
-test.todo('Filtering by "or not like" operator works');
-test.todo('Filtering by ">" operator works');
-test.todo('Filtering by ">=" operator works');
-test.todo('Filtering by "<" operator works');
-test.todo('Filtering by "<=" operator works');
-test.todo('Filtering by "=" operator works');
-test.todo('Filtering by "!=" operator works');
-test.todo('Filtering not existing operator fails');
-test.todo('Filtering not existing field fails');
+test('Filtering by "like" operator works #1', () => {
+	request.conditions = [
+		'like', 'firstName', 'Jo%',
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+		expect(row.firstName.substr(0,2)).toBe('Jo');
+});
+
+test('Filtering by "like" operator works #2', () => {
+	request.conditions = [
+		'like', 'firstName', '%ter',
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+		expect(row.firstName.substr(-3)).toBe('ter');
+});
+
+test('Filtering by "like" operator works #3', () => {
+	request.conditions = [
+		'like', 'firstName', 'Pa%c',
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+	{
+		expect(row.firstName.substr(0, 2)).toBe('Pa');
+		expect(row.firstName.substr(-1)).toBe('c');
+	}
+});
+
+test('Filtering by "like" operator works #4', () => {
+	request.conditions = [
+		'like', 'firstName', 'P.tr.c',
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+	{
+		expect(row.firstName.length).toEqual(6);
+		expect(row.firstName.substr(0, 1)).toBe('P');
+		expect(row.firstName.substr(2, 2)).toBe('tr');
+		expect(row.firstName.substr(-1)).toBe('c');
+	}
+});
+
+test('Filtering by "or like" operator works', () => {
+	request.conditions = [
+		'or like', 'firstName', ['Pat%', 'Pet%'],
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+	{
+		const namePart = row.firstName.substr(0, 3);
+
+		expect(namePart === 'Pat' || namePart === 'Pet').toBeTruthy();
+	}
+});
+
+test('Filtering by "not like" operator works', () => {
+	request.conditions = [
+		'not like', 'firstName', ['Ja%', '%usa%'],
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+	{
+		expect(row.firstName.substr(0, 2)).not.toBe('Ja');
+		expect(row.firstName.includes('usa')).toBeFalsy();
+	}
+});
+
+test('Filtering by "or not like" operator works', () => {
+	request.conditions = [
+		'or not like', 'firstName', ['Ja%', '%usa%'],
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	console.log(result);
+
+	for(let row of result)
+		expect(
+			row.firstName.substr(0, 2) != 'Ja'
+			|| row.firstName.includes('usa') === false
+		).toBeTruthy();
+});
+
+test('Filtering by ">" operator works', () => {
+	request.conditions = [
+		'>', 'age', 23,
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+		expect(row.age).toBeGreaterThan(23);
+});
+
+test('Filtering by ">=" operator works', () => {
+	request.conditions = [
+		'>=', 'age', 23,
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+		expect(row.age).toBeGreaterThanOrEqual(23);
+});
+
+test('Filtering by "<" operator works', () => {
+	request.conditions = [
+		'<', 'age', 23,
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+		expect(row.age).toBeLessThan(23);
+});
+
+test('Filtering by "<=" operator works', () => {
+	request.conditions = [
+		'<=', 'age', 23,
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+		expect(row.age).toBeLessThanOrEqual(23);
+});
+
+test('Filtering by "=" operator works', () => {
+	request.conditions = [
+		'=', 'age', 23,
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+		expect(row.age).toEqual(23);
+});
+
+test('Filtering by "!=" operator works', () => {
+	request.conditions = [
+		'!=', 'age', 23,
+	];
+
+	const result = memoryDb.getData(request);
+
+	expect(result.length).toBeGreaterThan(0);
+
+	for(let row of result)
+		expect(row.age).not.toEqual(23);
+});
+
+test('Filtering not existing operator fails', () => {
+	request.conditions = [
+		'neverexistingoperator'
+	];
+
+	expect(() => memoryDb.getData(request)).toThrowError();
+});
+
+test('Filtering not existing field fails', () => {
+	const operators = [
+		'and', 'or', 'not', 'or not',
+		'between', 'not between',
+		'like', 'or like', 'not like', 'or not like',
+		'>', '>=', '<', '<=', '=', '!='
+	];
+
+	for(let operator of operators)
+	{
+		request.conditions = [
+			operator, 'notexistingfield', 'neverexistingvalue'
+		];
+
+		expect(() => memoryDb.getData(request)).toThrowError();
+	}
+});
+
+test('Filtering with no value fails', () => {
+	const operators = [
+		'and', 'or', 'not', 'or not',
+		'between', 'not between',
+		'like', 'or like', 'not like', 'or not like',
+		'>', '>=', '<', '<=', '=', '!='
+	];
+
+	for(let operator of operators)
+	{
+		request.conditions = [
+			operator, 'age'
+		];
+
+		expect(() => memoryDb.getData(request)).toThrowError();
+	}
+});
