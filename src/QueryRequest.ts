@@ -12,9 +12,100 @@ export default class QueryRequest
 				this[key] = params[key];
 	}
 
-	public isValid()
+	public validate(): true | string
 	{
-		return typeof this.table === 'string';
+		if(typeof this.table != 'string')
+			return 'Table parameter is not string!';
+
+		if(typeof this.conditions !== 'object')
+			return 'Conditions parameter is not an object!';
+
+		if(this.hasConditions())
+		{
+			const isValidCondition = this.checkCondition(this.conditions);
+
+			if(isValidCondition !== true)
+				return isValidCondition;
+		}
+
+		return true;
+	}
+
+	private checkCondition(condition): true | string
+	{
+		if(Array.isArray(condition))
+		{
+			const operator = condition[0];
+
+			if(typeof operator !== 'string')
+				return 'Operator is not string!';
+
+			if(['and', 'or', 'not', 'or not'].some(v => v == operator))
+			{
+				if(condition.length == 1)
+					return `"${operator}" operator should have conditions!`;
+
+				for (let i = 1; i < condition.length; i++)
+				{
+					const isValidCondition = this.checkCondition(condition[i]);
+
+					if(isValidCondition !== true)
+						return isValidCondition;
+				}
+			}
+			else
+			{
+				if(typeof condition[1] !== 'string')
+					return 'Field should be string!';
+
+				if(['between', 'not between'].some(v => v == operator))
+				{
+					if(['number', 'bigint', 'string'].some((v) => v == typeof condition[2]) == false)
+						return 'Min value should be string or number!';
+
+					if(['number', 'bigint', 'string'].some((v) => v == typeof condition[3]) == false)
+						return 'Max value should be string or number!';
+				}
+				else if(['like', 'or like', 'not like', 'or not like'].some(v => v == operator))
+				{
+					const value = condition[2];
+
+					if(Array.isArray(value))
+					{
+						for(let subvalue of value)
+							if(typeof subvalue != 'string')
+								return 'Subvalue should be string!';
+					}
+					else if(typeof value != 'string')
+						return 'Value should be string!';
+				}
+				else if(['>', '>=', '<', '<=', '=', '!='].some(v => v == operator)
+					&& ['number', 'bigint', 'string', 'boolean'].some((v) => v == typeof condition[2]) == false)
+				{
+					return 'Value is invalid!';
+				}
+			}
+		}
+		else
+		{
+			for(let field in condition)
+			{
+				const value = condition[field];
+
+				if(typeof value === 'object' && !Array.isArray(value))
+					return `Value can't be an object!`;
+
+				if(['undefined', 'symbol', 'function'].some((v) => v == typeof value))
+					return `Value can't be ${typeof value}!`;
+
+				if(Array.isArray(value))
+					for(let subvalue of value)
+						if(['undefined', 'symbol', 'function'].some((v) => v == typeof subvalue))
+							return `Subvalue can't be ${typeof value}!`;
+			}
+		}
+
+		return true;
 	}
 
 	 public hasConditions()
@@ -29,12 +120,18 @@ export type ICondition = [
 	...(IConditionParameters | ICondition)[]
 ] | [
 	'between' | 'not between' | 'like' | 'or like' | 'not like' | 'or not like',
-	string | string[],
+	string,
 	...any[]
 ] | [
 	'>' | '>=' | '<' | '<=' | '=' | '!=',
 	string,
-	string | number
+	string | number | boolean | bigint
+] | [ // Operators defined by other API's
+	string,
+	string,
+	...any[]
 ] | IConditionParameters;
 
-type IConditionParameters = {[key: string]: any | any[]};
+// Officially type any is (string | number | boolean | bigint) or array of those types.
+// Reason behind this is that type below matches to value "[]" but does not matches to type (string | number | boolean | bigint).
+type IConditionParameters = {[key: string]: any};

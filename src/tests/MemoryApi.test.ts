@@ -12,7 +12,7 @@ beforeEach(() => {
 	request.table = 'users';
 });
 
-test(`Not complete request will throw exception`, () => {
+test(`Executing query with invalid request fails`, () => {
 	delete request.table;
 
 	expect(() => memoryDb.getData(request)).toThrowError();
@@ -246,8 +246,6 @@ test('Filtering by "or not like" operator works', () => {
 
 	expect(result.length).toBeGreaterThan(0);
 
-	console.log(result);
-
 	for(let row of result)
 		expect(
 			row.firstName.substr(0, 2) != 'Ja'
@@ -333,7 +331,7 @@ test('Filtering by "!=" operator works', () => {
 		expect(row.age).not.toEqual(23);
 });
 
-test('Filtering not existing operator fails', () => {
+test('Filtering by not existing operator fails', () => {
 	request.conditions = [
 		'neverexistingoperator'
 	];
@@ -341,7 +339,7 @@ test('Filtering not existing operator fails', () => {
 	expect(() => memoryDb.getData(request)).toThrowError();
 });
 
-test('Filtering not existing field fails', () => {
+test('Filtering by not existing field fails', () => {
 	const operators = [
 		'and', 'or', 'not', 'or not',
 		'between', 'not between',
@@ -351,27 +349,14 @@ test('Filtering not existing field fails', () => {
 
 	for(let operator of operators)
 	{
-		request.conditions = [
-			operator, 'notexistingfield', 'neverexistingvalue'
-		];
-
-		expect(() => memoryDb.getData(request)).toThrowError();
-	}
-});
-
-test('Filtering with no value fails', () => {
-	const operators = [
-		'and', 'or', 'not', 'or not',
-		'between', 'not between',
-		'like', 'or like', 'not like', 'or not like',
-		'>', '>=', '<', '<=', '=', '!='
-	];
-
-	for(let operator of operators)
-	{
-		request.conditions = [
-			operator, 'age'
-		];
+		if(['and', 'or', 'not', 'or not'].some(v => v == operator))
+			request.conditions = [
+				operator, {notexistingfield: 'notexistingvalue'}
+			];
+		else
+			request.conditions = [
+				operator, 'notexistingfield', 'neverexistingvalue'
+			];
 
 		expect(() => memoryDb.getData(request)).toThrowError();
 	}

@@ -13,8 +13,10 @@ export default class MemoryApi extends DatabaseApi
 
 	getData(query: QueryRequest)
 	{
-		if(!query.isValid())
-			throw new Error(`Query is not valid!`);
+		const isQueryValid = query.validate();
+
+		if(isQueryValid !== true)
+			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
 
 		let data = JSON.parse(JSON.stringify(this.getTable(query.table)));
 
@@ -62,6 +64,10 @@ export default class MemoryApi extends DatabaseApi
 				let field = <string>condition[1],
 					min = condition[2],
 					max = condition[3];
+
+				if(field in record === false)
+					throw new Error(`Field "${field}" does not exists in record!`);
+
 				let isBetween = min <= record[field] && record[field] <= max;
 
 				return (operator === 'between' && isBetween
@@ -71,6 +77,9 @@ export default class MemoryApi extends DatabaseApi
 			{
 				let field = <string>condition[1],
 					values = (Array.isArray(condition[2]) ? condition[2] : [condition[2]]);
+
+				if(field in record === false)
+					throw new Error(`Field "${field}" does not exists in record!`);
 
 				for (let value of values)
 				{
@@ -92,6 +101,9 @@ export default class MemoryApi extends DatabaseApi
 			{
 				let field = <string>condition[1];
 
+				if(field in record === false)
+					throw new Error(`Field "${field}" does not exists in record!`);
+
 				return eval(`record[field] ${operator} condition[2]`);
 			}
 			else
@@ -101,6 +113,9 @@ export default class MemoryApi extends DatabaseApi
 		{
 			for (let field in condition)
 			{
+				if(field in record === false)
+					throw new Error(`Field "${field}" does not exists in record!`);
+
 				const values = Array.isArray(condition[field]) ? condition[field] : [condition[field]];
 
 				return values.some((v) => v == record[field]);
