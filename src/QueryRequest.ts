@@ -20,6 +20,9 @@ export default class QueryRequest
 		if(typeof this.conditions !== 'object')
 			return 'Conditions parameter is not an object!';
 
+		if(this.table === '')
+			return 'Table name is empty!';
+
 		if(this.hasConditions())
 		{
 			const isValidCondition = this.checkCondition(this.conditions);
@@ -33,6 +36,9 @@ export default class QueryRequest
 
 	private checkCondition(condition): true | string
 	{
+		if(typeof condition != 'object')
+			return 'Condition is not an object!';
+
 		if(Array.isArray(condition))
 		{
 			const operator = condition[0];
@@ -60,11 +66,11 @@ export default class QueryRequest
 
 				if(['between', 'not between'].some(v => v == operator))
 				{
-					if(['number', 'bigint', 'string'].some((v) => v == typeof condition[2]) == false)
-						return 'Min value should be string or number!';
+					if(isNaN(condition[2]))
+						return 'Min value should be numeric!';
 
-					if(['number', 'bigint', 'string'].some((v) => v == typeof condition[3]) == false)
-						return 'Max value should be string or number!';
+					if(isNaN(condition[3]))
+						return 'Max value should be numeric!';
 				}
 				else if(['like', 'or like', 'not like', 'or not like'].some(v => v == operator))
 				{
@@ -79,10 +85,16 @@ export default class QueryRequest
 					else if(typeof value != 'string')
 						return 'Value should be string!';
 				}
-				else if(['>', '>=', '<', '<=', '=', '!='].some(v => v == operator)
-					&& ['number', 'bigint', 'string', 'boolean'].some((v) => v == typeof condition[2]) == false)
+				else if(['>', '>=', '<', '<=', '=', '!='].some(v => v == operator))
 				{
-					return 'Value is invalid!';
+					if(['number', 'bigint', 'string', 'boolean'].some((v) => v == typeof condition[2]) == false)
+					{
+						return 'Value is invalid!';
+					}
+				}
+				else
+				{
+					return `Unknown operator: "${operator}"!`;
 				}
 			}
 		}
