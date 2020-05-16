@@ -66,11 +66,16 @@ export default class QueryRequest
 
 				if(['between', 'not between'].some(v => v == operator))
 				{
-					if(isNaN(condition[2]))
+					const isNumeric = (v) => ['string', 'number'].some((v2) => v2 === typeof v) && /^[0-9]+(\.[0-9]+|)$/.test(v+'');
+
+					if(isNumeric(condition[2]) === false)
 						return 'Min value should be numeric!';
 
-					if(isNaN(condition[3]))
+					if(isNumeric(condition[3]) === false)
 						return 'Max value should be numeric!';
+
+					if(parseFloat(condition[2]) > parseFloat(condition[3]))
+						return 'Max value should be greater than min value!';
 				}
 				else if(['like', 'or like', 'not like', 'or not like'].some(v => v == operator))
 				{
@@ -79,11 +84,11 @@ export default class QueryRequest
 					if(Array.isArray(value))
 					{
 						for(let subvalue of value)
-							if(typeof subvalue != 'string')
-								return 'Subvalue should be string!';
+							if(['string', 'number'].some((v) => v === typeof subvalue) === false)
+								return 'Subvalue should be string or number!';
 					}
-					else if(typeof value != 'string')
-						return 'Value should be string!';
+					else if(['string', 'number'].some((v) => v === typeof value) === false)
+						return 'Value should be string or number!';
 				}
 				else if(['>', '>=', '<', '<=', '=', '!='].some(v => v == operator))
 				{
