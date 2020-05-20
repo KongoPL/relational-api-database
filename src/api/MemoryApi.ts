@@ -1,5 +1,5 @@
 import DatabaseApi from "../DatabaseApi";
-import QueryRequest, {ICondition} from "../QueryRequest";
+import QueryRequest, {EOrderType, ICondition, TLimit, TOrder} from "../QueryRequest";
 
 export default class MemoryApi extends DatabaseApi
 {
@@ -25,6 +25,13 @@ export default class MemoryApi extends DatabaseApi
 
 		if(query.hasConditions())
 			data = data.filter((r) => this.doesRecordMeetsConditions(r, query.conditions));
+
+		if(query.hasOrder())
+			data = this.orderData(data, query.order);
+
+		if(query.hasLimit())
+			data = this.limitData(data, query.limit);
+
 
 		return data;
 	}
@@ -124,5 +131,45 @@ export default class MemoryApi extends DatabaseApi
 
 
 		return false;
+	}
+
+
+	private limitData(data: any[], limit: TLimit): any[]
+	{
+		let startKey = 0,
+			endKey = 0;
+
+		if(limit.length == 1)
+			endKey = parseInt(limit[0]+'');
+		else if(limit.length == 2)
+		{
+			startKey = parseInt(limit[0] + '');
+			endKey = startKey + parseInt(limit[1] + '');
+		}
+
+		return data.slice(startKey, endKey);
+	}
+
+
+	private orderData(data: any[], order: TOrder): any[]
+	{
+		return data.sort( ( a: any, b: any ) =>
+		{
+			for( let field in order )
+			{
+				if(field in a === false || field in b === false)
+					throw new Error(`Field "${field}" does not exists in record!`);
+
+				let direction = order[field];
+
+				if ( a[field] > b[field] )
+					return ( direction == EOrderType.asc ? 1 : -1 );
+
+				if ( a[field] < b[field] )
+					return ( direction == EOrderType.asc ? -1 : 1 );
+			}
+
+			return 0;
+		});
 	}
 }

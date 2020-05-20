@@ -1,4 +1,4 @@
-import QueryRequest from "../QueryRequest";
+import QueryRequest, {EOrderType} from "../QueryRequest";
 
 function checkFilteringFailing(operators: string[], valueCases: any[], valueCaseIsArrayOfValues = false)
 {
@@ -163,14 +163,24 @@ describe('Query request filtering checks', () =>
 			checkFilteringFailing([
 				'between', 'not between',
 			], [
-				['a', 'b'],
-				[1, 'a'],
+				// Checking min parameter:
 				['a', 1],
-				[true, false],
-				[[], []],
-				[{}, []],
-				['5', 'a'],
-				['a', 5],
+				[true, 1],
+				[[], 5],
+				[{}, 10],
+				[() => {}, 500],
+				['1,15', 2],
+
+				// Checking max parameter:
+				[1, 'a'],
+				[0, true],
+				[0, []],
+				[0, {}],
+				[0, () => {}],
+				[1, '2,25'],
+
+				// Checking whether max have to be greater than min ("b" is greater than "a")
+				['a', 'b'],
 				[3, 2],
 				['3', '2']
 			], true);
@@ -241,5 +251,154 @@ describe('Query request filtering checks', () =>
 				true
 			]);
 		});
+	});
+});
+
+describe('Query request limiting checks', () => {
+	test('Query with limiting only by amount works', () => {
+		const testCases: [string|number][] = [
+			[0],
+			['0']
+		], request = new QueryRequest({
+			table: 'any'
+		});
+
+		for(let testCase of testCases)
+		{
+			request.limit = testCase;
+
+			expect(request.validate()).toStrictEqual(true);
+		}
+	});
+
+	test('Query with limiting by offset and amount works', () => {
+		const testCases: [string|number, string|number][] = [
+			[0, 50],
+			[20, 10],
+			['0', 5],
+			[15, '5'],
+			['0', '10']
+		], request = new QueryRequest({
+			table: 'any'
+		});
+
+		for(let testCase of testCases)
+		{
+			request.limit = testCase;
+
+			expect(request.validate()).toStrictEqual(true);
+		}
+	});
+
+	test('Query with limiting by non numeric values fails', () => {
+		const testCases: any = [
+			['a'],
+			['1.2343e15'],
+			[true],
+			[[]],
+			[{}],
+			[() => {}],
+			['1,15', 0],
+
+			[0, 'a'],
+			[0, '1.2343e15'],
+			[0, true],
+			[0, []],
+			[0, {}],
+			[0, () => {}]
+		], request = new QueryRequest({
+			table: 'any'
+		});
+
+		for(let testCase of testCases)
+		{
+			request.limit = testCase;
+
+			expect(request.validate()).not.toStrictEqual(true);
+		}
+	});
+
+	test('Query with limiting by floating values fails', () => {
+		const testCases: any = [
+			[1.1],
+			['1.1'],
+			[1, 1.15],
+			[1, '1.15']
+		], request = new QueryRequest({
+			table: 'any'
+		});
+
+		for(let testCase of testCases)
+		{
+			request.limit = testCase;
+
+			expect(request.validate()).not.toStrictEqual(true);
+		}
+	});
+
+	test('Query with limiting by negative values fails', () => {
+		const testCases: any = [
+			[-1],
+			['-1'],
+			['-1.15'],
+			[1, -1],
+			[1, '-1'],
+			[1, '-1.15']
+		], request = new QueryRequest({
+			table: 'any'
+		});
+
+		for(let testCase of testCases)
+		{
+			request.limit = testCase;
+
+			expect(request.validate()).not.toStrictEqual(true);
+		}
+	});
+});
+
+describe('Query request ordering checks', () => {
+	test('Ordering works', () => {
+		const testCases: any[] = [
+			EOrderType.asc,
+			EOrderType.desc,
+			'asc',
+			'desc'
+		], request = new QueryRequest({
+			table: 'any'
+		});
+
+		for(let testCase of testCases)
+		{
+			request.order = {
+				column: testCase
+			};
+
+			expect(request.validate()).toBe(true);
+		}
+	});
+
+	test('Ordering by non accepted value fails', () => {
+		const testCases: any[] = [
+			true,
+			1,
+			'wrong value',
+			'ASC',
+			() => {},
+			[],
+			{},
+			null
+		], request = new QueryRequest({
+			table: 'any'
+		});
+
+		for(let testCase of testCases)
+		{
+			request.order = {
+				column: testCase
+			};
+
+			expect(request.validate()).not.toBe(true);
+		}
 	});
 });

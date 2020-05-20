@@ -1,5 +1,5 @@
 import MemoryApi from "../api/MemoryApi";
-import QueryRequest from "../QueryRequest";
+import QueryRequest, {EOrderType} from "../QueryRequest";
 import memoryApiDb from "./mock-databases/MemoryApiDb";
 
 const memoryDb = new MemoryApi();
@@ -12,10 +12,12 @@ beforeEach(() => {
 	request.table = 'users';
 });
 
-test(`Executing query with invalid request fails`, () => {
-	delete request.table;
+test(`Check whether validation method for request is called`, () => {
+	const validateSpy = jest.spyOn(request, 'validate');
 
-	expect(() => memoryDb.getData(request)).toThrowError();
+	memoryDb.getData(request);
+
+	expect(validateSpy).toHaveBeenCalled();
 });
 
 test('Is able to get data', () => {
@@ -397,5 +399,147 @@ describe('Filtering data', () =>
 				expect(() => memoryDb.getData(request)).toThrowError();
 			}
 		});
+	});
+});
+
+describe('Limiting data', () => {
+	test('Limiting data by amount works', () =>
+	{
+		const testCases = [
+			5,
+			'5',
+		];
+
+		for (let testCase of testCases)
+		{
+			request.limit = [testCase];
+
+			const result = memoryDb.getData(request);
+
+			expect(result.length).toBe(parseInt(testCase+''));
+		}
+	});
+
+	test('Limiting data by offset and amount works', () =>
+	{
+		request.limit = [0, 4];
+		let result = memoryDb.getData(request);
+		expect(result.length).toBe(4);
+	});
+
+	test('Limiting data by changed offset and amount works', () =>
+	{
+		request.limit = [1, 4];
+		let result = memoryDb.getData(request);
+		expect(result.length).toBe(4);
+	});
+
+	test('Limiting data by offset and amount works (checked by data)', () =>
+	{
+		request.limit = [0, 5];
+		let dataA = memoryDb.getData(request);
+
+		request.limit = [1, 4];
+		let dataB = memoryDb.getData(request);
+
+		expect(dataA.length).toBe(5);
+		expect(dataB.length).toBe(4);
+		expect(JSON.stringify(dataA[0])).not.toBe(JSON.stringify(dataB[0]));
+		expect(JSON.stringify(dataA[4])).toBe(JSON.stringify(dataB[3]));
+	});
+
+	test('Limiting data with offset and amount greater than records count works', () =>
+	{
+		request.limit = [5, 4];
+		let result = memoryDb.getData(request);
+		expect(result.length).not.toBe(4);
+	});
+
+	test('Limiting data by offset greater than records count works', () =>
+	{
+		request.limit = [10000, 4];
+		let result = memoryDb.getData(request);
+		expect(result.length).not.toBe(4);
+	});
+});
+
+describe('Sorting data', () =>
+{
+	function isSortCorrect(values, sortDirection: EOrderType)
+	{
+		if(values.length === 0)
+			return false;
+
+		let currentValue = values[0];
+
+		for (let i = 1; i < values.length; i++)
+		{
+			const value = values[i];
+
+			if(sortDirection == EOrderType.asc && value >= currentValue
+			|| sortDirection == EOrderType.desc && value <= currentValue)
+				currentValue = value;
+			else
+				return false;
+		}
+
+		return true;
+	}
+
+	test('Ordering numerical data ascending works', () =>
+	{
+		request.order = {
+			age: EOrderType.asc
+		};
+
+		const data = memoryDb.getData(request).map((v) => v.age);
+
+		if(!isSortCorrect(data, EOrderType.asc))
+			throw new Error(`Sorting by number ascending does not work. Returned values: ${JSON.stringify(data)}`);
+	});
+
+	test('Ordering numerical data descending works', () =>
+	{
+		request.order = {
+			age: EOrderType.desc
+		};
+
+		const data = memoryDb.getData(request).map((v) => v.age);
+
+		if(!isSortCorrect(data, EOrderType.desc))
+			throw new Error(`Sorting by number descending does not work. Returned values: ${JSON.stringify(data)}`);
+	});
+
+	test('Ordering text data ascending works', () =>
+	{
+		request.order = {
+			firstName: EOrderType.asc
+		};
+
+		const data = memoryDb.getData(request).map((v) => v.firstName);
+
+		if(!isSortCorrect(data, EOrderType.asc))
+			throw new Error(`Sorting by text ascending does not work. Returned values: ${JSON.stringify(data)}`);
+	});
+
+	test('Ordering text data descending works', () =>
+	{
+		request.order = {
+			firstName: EOrderType.desc
+		};
+
+		const data = memoryDb.getData(request).map((v) => v.firstName);
+
+		if(!isSortCorrect(data, EOrderType.desc))
+			throw new Error(`Sorting by text descending does not work. Returned values: ${JSON.stringify(data)}`);
+	});
+
+	test('Ordering by not existing column fails', () =>
+	{
+		request.order = {
+			notexistingcolumn: EOrderType.asc
+		};
+
+		expect(() => memoryDb.getData(request)).toThrowError();
 	});
 });

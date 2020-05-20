@@ -1,11 +1,13 @@
 export default class QueryRequest
 {
+	public queryType: EQueryType | string = EQueryType.select;
 	// public fields: string[] = ['*'];
 	public table: string = '';
 	public conditions: ICondition = [];
-	// public order: IOrder
+	public limit: TLimit = [];
+	public order: TOrder = {};
 
-	constructor(params?: {table?: string, conditions?: ICondition})
+	constructor(params?: {table?: string, conditions?: ICondition, limit?: TLimit})
 	{
 		for(let key in params)
 			if(this.hasOwnProperty(key))
@@ -31,7 +33,29 @@ export default class QueryRequest
 				return isValidCondition;
 		}
 
+		if(this.hasLimit())
+		{
+			const isValidLimit = this.checkLimit();
+
+			if(isValidLimit !== true)
+				return isValidLimit;
+		}
+
+		if(this.hasOrder())
+		{
+			const isValidOrder = this.checkOrder();
+
+			if(isValidOrder !== true)
+				return isValidOrder;
+		}
+
 		return true;
+	}
+
+	public hasConditions()
+	{
+		return (typeof this.conditions === 'object' && Array.isArray(this.conditions) && this.conditions.length > 0
+			|| typeof this.conditions === 'object' && !Array.isArray(this.conditions));
 	}
 
 	private checkCondition(condition): true | string
@@ -66,8 +90,6 @@ export default class QueryRequest
 
 				if(['between', 'not between'].some(v => v == operator))
 				{
-					const isNumeric = (v) => ['string', 'number'].some((v2) => v2 === typeof v) && /^[0-9]+(\.[0-9]+|)$/.test(v+'');
-
 					if(isNumeric(condition[2]) === false)
 						return 'Min value should be numeric!';
 
@@ -125,16 +147,69 @@ export default class QueryRequest
 		return true;
 	}
 
-	 public hasConditions()
+	 public hasLimit()
 	 {
-	 	return (typeof this.conditions === 'object' && Array.isArray(this.conditions) && this.conditions.length > 0
-		|| typeof this.conditions === 'object' && !Array.isArray(this.conditions));
+	 	return Array.isArray(this.limit) && this.limit.length > 0;
 	 }
+
+
+	 public checkLimit(): true | string
+	 {
+	 	if(this.limit.length > 2)
+	 		return 'Limit accepts maximally 2 values!';
+
+	 	for(let key in this.limit)
+		{
+			const value = <string | number>this.limit[key];
+
+			if(!isNumeric(value, false))
+				return `${key == '0' && this.limit.length == 2 ? 'Offset' : 'Amount'} value should be rounded number!`;
+
+			if(Math.sign(parseInt(value+'')) === -1)
+				return `${key == '0' && this.limit.length == 2 ? 'Offset' : 'Amount'} value should be positive number!`;
+		}
+
+	 	return true;
+	 }
+
+
+	 public hasOrder()
+	 {
+	 	return Object.keys(this.order).length > 0;
+	 }
+
+
+	 public checkOrder(): true | string
+	 {
+	 	for(let column in this.order)
+		{
+			const direction = this.order[column];
+
+			if([EOrderType.asc, EOrderType.desc, 'asc', 'desc'].some((v) => v === direction) === false)
+				return 'Order column value have to be one of these: "asc", "desc" or EOrderType value!';
+		}
+
+	 	return true;
+	 }
+}
+
+export enum EQueryType
+{
+	select = 'select',
+	update = 'update',
+	delete = 'delete',
+	insert = 'insert',
+}
+
+export enum EOrderType
+{
+	asc = 'asc',
+	desc = 'desc',
 }
 
 export type ICondition = [
 	'and' | 'or' | 'not' | 'or not',
-	...(IConditionParameters | ICondition)[]
+	...(TConditionParameters | ICondition)[]
 ] | [
 	'between' | 'not between' | 'like' | 'or like' | 'not like' | 'or not like',
 	string,
@@ -147,8 +222,20 @@ export type ICondition = [
 	string,
 	string,
 	...any[]
-] | IConditionParameters;
+] | TConditionParameters;
 
 // Officially type any is (string | number | boolean | bigint) or array of those types.
 // Reason behind this is that type below matches to value "[]" but does not matches to type (string | number | boolean | bigint).
-type IConditionParameters = {[key: string]: any};
+type TConditionParameters = {[key: string]: any};
+
+export type TLimit = [(number|string)?, (number|string)?];
+export type TOrder = {[key:string]: EOrderType | 'asc' | 'desc';};
+
+function isNumeric(v, allowFloatValue = true)
+{
+	return ['string', 'number'].some((v2) => v2 === typeof v)
+		&& (
+			allowFloatValue && /^[0-9]+(\.[0-9]+|)$/.test(v+'')
+			|| !allowFloatValue && /^[0-9]+$/.test(v+'')
+		);
+}
