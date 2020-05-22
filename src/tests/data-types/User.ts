@@ -1,6 +1,6 @@
 import DatabaseDataObject from "../../DatabaseDataObject";
 
-export default class User extends DatabaseDataObject
+export default class User extends DatabaseDataObject<User>
 {
 	public id: number;
 	public firstName: string;
@@ -15,6 +15,11 @@ export default class User extends DatabaseDataObject
 		this.firstName = '';
 		this.lastName = '';
 		this.age = 0;
+	}
+
+	static tableName(): string
+	{
+		return 'users';
 	}
 
 	get fullName(): string

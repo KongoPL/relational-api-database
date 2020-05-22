@@ -7,7 +7,12 @@ export default class QueryRequest
 	public limit: TLimit = [];
 	public order: TOrder = {};
 
-	constructor(params?: {table?: string, conditions?: ICondition, limit?: TLimit})
+	constructor(params?: {
+		table?: string,
+		conditions?: ICondition,
+		limit?: TLimit,
+		order?: TOrder
+	})
 	{
 		for(let key in params)
 			if(this.hasOwnProperty(key))
@@ -224,12 +229,10 @@ export type ICondition = [
 	...any[]
 ] | TConditionParameters;
 
-// Officially type any is (string | number | boolean | bigint) or array of those types.
-// Reason behind this is that type below matches to value "[]" but does not matches to type (string | number | boolean | bigint).
-type TConditionParameters = {[key: string]: any};
+type TConditionParameters = {[key: string]: string | number | boolean | bigint} | {};
 
 export type TLimit = [(number|string)?, (number|string)?];
-export type TOrder = {[key:string]: EOrderType | 'asc' | 'desc';};
+export type TOrder = {[key:string]: EOrderType | 'asc' | 'desc'};
 
 function isNumeric(v, allowFloatValue = true)
 {
