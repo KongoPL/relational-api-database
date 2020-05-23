@@ -3,6 +3,7 @@ import DatabaseDataObject from "../DatabaseDataObject";
 import Database from "../Database";
 import MemoryApi from "../api/MemoryApi";
 import memoryApiDb from "./mock-databases/MemoryApiDb";
+import City from "./data-types/City";
 
 beforeAll(() => {
 	const memoryApi = new MemoryApi();
@@ -74,4 +75,44 @@ describe('Finding user', () =>
 			expect(user.lastName).toBe('Doe');
 		}
 	});
+});
+
+describe('Relations', () => {
+	test('Obtaining One - One relation works', () => {
+		const user = <User> User.findById(1);
+
+		expect(user).not.toBeNull();
+		expect(user.city).toBeNull();
+		expect(user.cityId).not.toBeNull();
+
+		user.getRelation('city').then((data: City) => {
+			expect(user.city).not.toBeNull();
+			expect(data).toStrictEqual(user.city);
+			expect((<City>user.city).name).toBe('Oklahoma');
+		}).catch(() => {
+			expect(false).toBe(true); // Should never execute
+		});
+	});
+
+	test('Obtaining One - Many relation works', () => {
+		const city = <City> City.findById(1);
+
+		expect(city).not.toBeNull();
+		expect(city.users.length).toBe(0);
+		expect(city.id).not.toBeNull();
+
+		city.getRelation('users').then((data: User[]) => {
+			expect(city.users).not.toBeNull();
+			expect(data).toStrictEqual(city.users);
+			expect(data.length).toBeGreaterThan(0);
+
+			for(let row of data)
+				expect(row.cityId).toBe(1);
+		}).catch(() => {
+			expect(false).toBe(true); // Should never execute
+		});
+	});
+
+	test.todo('Obtaining Many - Many relation works');
+	test.todo(`Updating related record separately, won't update it on model except, relation is refreshed`);
 });
