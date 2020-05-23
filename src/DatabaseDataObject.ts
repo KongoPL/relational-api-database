@@ -1,6 +1,5 @@
 import Database from "./Database";
 import QueryRequest, {ICondition, TLimit, TOrder} from "./QueryRequest";
-import City from "./tests/data-types/City";
 
 export default abstract class DatabaseDataObject<ModelClass>
 {
@@ -49,7 +48,7 @@ export default abstract class DatabaseDataObject<ModelClass>
 		return {};
 	}
 
-	public getRelation(name: string, refresh: boolean = false): Promise<any>
+	public async getRelation(name: string, refresh: boolean = false): Promise<any>
 	{
 		const relations = this.relations();
 
@@ -57,53 +56,39 @@ export default abstract class DatabaseDataObject<ModelClass>
 			throw new Error(`Relation "${name}" does not exists in model!`);
 
 		const relation = relations[name];
+		let data;
 
-		return new Promise((resolve, reject) => {
-			try
-			{
-				let data;
+		if(this.hasOwnProperty(name) && this.obtainedRelations.includes(name) && !refresh)
+			return this[name];
 
-				if(this.hasOwnProperty(name) && this.obtainedRelations.includes(name) && !refresh)
+		switch (relation.type)
+		{
+			case ERelationType.ONE_ONE:
+			case ERelationType.ONE_MANY:
+				const attributes = {};
+
+				for (let key in relation.relation)
 				{
-					resolve(this[name]);
+					const destinationKey = relation.relation[key];
 
-					return;
+					attributes[destinationKey] = this[key];
 				}
 
-				switch (relation.type)
-				{
-					case ERelationType.ONE_ONE:
-					case ERelationType.ONE_MANY:
-						const attributes = {};
+				if(relation.type === ERelationType.ONE_ONE)
+					data = await relation.model.findOneByAttributes(attributes);
+				else
+					data = await relation.model.findByAttributes(attributes);
+				break;
 
-						for (let key in relation.relation)
-						{
-							const destinationKey = relation.relation[key];
+			case ERelationType.MANY_MANY:
+				throw new Error('Not yet implemented!');
+				break;
+		}
 
-							attributes[destinationKey] = this[key];
-						}
+		if(this.hasOwnProperty(name))
+			this[name] = data;
 
-						if(relation.type === ERelationType.ONE_ONE)
-							data = relation.model.findOneByAttributes(attributes);
-						else
-							data = relation.model.findByAttributes(attributes);
-						break;
-
-					case ERelationType.MANY_MANY:
-						throw new Error('Not yet implemented!');
-						break;
-				}
-
-				if(this.hasOwnProperty(name))
-					this[name] = data;
-
-				resolve(data);
-			}
-			catch(e)
-			{
-				reject(e);
-			}
-		});
+		return data;
 	}
 
 
@@ -124,13 +109,13 @@ export default abstract class DatabaseDataObject<ModelClass>
 	}
 
 
-	static findById(id: string | number)
+	static async findById(id: string | number)
 	{
 		return this.findOneByAttributes({id});
 	}
 
 
-	static findOneByAttributes(attributes: {[key: string]: any})
+	static async findOneByAttributes(attributes: {[key: string]: any})
 	{
 		if(typeof attributes != "object" || Array.isArray(attributes))
 			throw new Error('Attributes have to be strict object!');
@@ -141,7 +126,7 @@ export default abstract class DatabaseDataObject<ModelClass>
 	}
 
 
-	static findByAttributes(attributes: {[key: string]: any})
+	static async findByAttributes(attributes: {[key: string]: any})
 	{
 		if(typeof attributes != "object" || Array.isArray(attributes))
 			throw new Error('Attributes have to be strict object!');
@@ -152,44 +137,41 @@ export default abstract class DatabaseDataObject<ModelClass>
 	}
 
 
-	static findOne(params: {
+	static async findOne(params: {
 		conditions?: ICondition,
 		order?: TOrder
-	} = {})
+		// @ts-ignore
+	} = {}): Promise<ModelClass>
 	{
-		const data = this.find({
+		return this.find({
 			...params,
 			limit: [0, 1]
-		});
-
-		if(data.length > 0)
-			return data[0];
-		else
-			return null;
+		}).then(data => data.length > 0 ? data[0] : null);
 	}
 
 
-	static find(params: {
+	static async find(params: {
 		conditions?: ICondition,
 		limit?: TLimit,
 		order?: TOrder
 		// @ts-ignore
-	} = {}): ModelClass[]
+	} = {}): Promise<ModelClass[]>
 	{
 		const request = new QueryRequest({
 			...params,
 			table: this.tableName(),
 		});
 
-		return DatabaseDataObject.db.getData(request).map((v) =>
-		{
-			// @ts-ignore
-			const model = <ModelClass>(new this());
+		return DatabaseDataObject.db.getData(request)
+			.then((data) => data.map((v) =>
+			{
+				// @ts-ignore
+				const model = <ModelClass>(new this());
 
-			model.setAttributes(v);
+				model.setAttributes(v);
 
-			return model;
-		});
+				return model;
+			}));
 	}
 }
 

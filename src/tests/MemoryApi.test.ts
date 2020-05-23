@@ -20,14 +20,14 @@ test(`Check whether validation method for request is called`, () => {
 	expect(validateSpy).toHaveBeenCalled();
 });
 
-test('Is able to get data', () => {
-	const result = memoryDb.getData(request);
+test('Is able to get data', async () => {
+	const result = await memoryDb.getData(request);
 
 	expect(result.length).toBe(memoryApiDb.users.length);
 });
 
-test(`Returned value isn't reference to object`, () => {
-	const result = memoryDb.getData(request);
+test(`Returned value isn't reference to object`, async () => {
+	const result = await memoryDb.getData(request);
 
 	expect(result[0]).not.toBe(memoryApiDb.users[0]);
 });
@@ -35,7 +35,7 @@ test(`Returned value isn't reference to object`, () => {
 describe('Filtering data', () =>
 {
 	describe('Filtering by parameters', () => {
-		test(`Filtering by parameters works`, () =>
+		test(`Filtering by parameters works`, async () =>
 		{
 			request.conditions = {
 				firstName: 'Jane',
@@ -43,7 +43,7 @@ describe('Filtering data', () =>
 				age: 18
 			};
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toEqual(1);
 			expect(result[0].firstName).toBe('Jane');
@@ -51,14 +51,14 @@ describe('Filtering data', () =>
 			expect(result[0].age).toBe(18);
 		});
 
-		test(`Filtering by parameters with array values works`, () =>
+		test(`Filtering by parameters with array values works`, async () =>
 		{
 			request.conditions = {
 				firstName: ['John', 'Jane'],
 				lastName: 'Doe',
 			};
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toEqual(2);
 
@@ -72,13 +72,13 @@ describe('Filtering data', () =>
 
 	describe('Filtering by conditional operators', () =>
 	{
-		test('Filtering by "or" operator works', () =>
+		test('Filtering by "or" operator works', async () =>
 		{
 			request.conditions = [
 				'or', {lastName: 'Doe'}, {firstName: 'Peter'}
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toEqual(3);
 
@@ -86,25 +86,25 @@ describe('Filtering data', () =>
 				expect(row.lastName === 'Doe' || row.firstName == 'Peter').toBeTruthy();
 		});
 
-		test('Filtering by "and" operator works', () =>
+		test('Filtering by "and" operator works', async () =>
 		{
 			request.conditions = [
 				'and', {firstName: 'Jane'}, {lastName: 'Doe'}
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toEqual(1);
 			expect(result[0].firstName === 'Jane' || result[0].lastName == 'Doe').toBeTruthy();
 		});
 
-		test('Filtering by "not" operator works', () =>
+		test('Filtering by "not" operator works', async () =>
 		{
 			request.conditions = [
 				'not', {firstName: 'Jane'}, {lastName: 'Doe'}
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -115,13 +115,13 @@ describe('Filtering data', () =>
 			}
 		});
 
-		test('Filtering by "or not" operator works', () =>
+		test('Filtering by "or not" operator works', async () =>
 		{
 			request.conditions = [
 				'or not', {firstName: 'Jane'}, {lastName: 'Doe'}
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -132,13 +132,13 @@ describe('Filtering data', () =>
 
 	describe('Filtering by logical operators', () =>
 	{
-		test('Filtering by "between" operator works', () =>
+		test('Filtering by "between" operator works', async () =>
 		{
 			request.conditions = [
 				'between', 'age', 20, 30
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -149,13 +149,13 @@ describe('Filtering data', () =>
 			}
 		});
 
-		test('Filtering by "not between" operator works', () =>
+		test('Filtering by "not between" operator works', async () =>
 		{
 			request.conditions = [
 				'not between', 'age', 20, 30
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -165,13 +165,13 @@ describe('Filtering data', () =>
 
 		describe('"Like" operator checks', () =>
 		{
-			test('Filtering by "like" operator works #1', () =>
+			test('Filtering by "like" operator works #1', async () =>
 			{
 				request.conditions = [
 					'like', 'firstName', 'Jo%',
 				];
 
-				const result = memoryDb.getData(request);
+				const result = await memoryDb.getData(request);
 
 				expect(result.length).toBeGreaterThan(0);
 
@@ -179,13 +179,13 @@ describe('Filtering data', () =>
 					expect(row.firstName.substr(0, 2)).toBe('Jo');
 			});
 
-			test('Filtering by "like" operator works #2', () =>
+			test('Filtering by "like" operator works #2', async () =>
 			{
 				request.conditions = [
 					'like', 'firstName', '%ter',
 				];
 
-				const result = memoryDb.getData(request);
+				const result = await memoryDb.getData(request);
 
 				expect(result.length).toBeGreaterThan(0);
 
@@ -193,13 +193,13 @@ describe('Filtering data', () =>
 					expect(row.firstName.substr(-3)).toBe('ter');
 			});
 
-			test('Filtering by "like" operator works #3', () =>
+			test('Filtering by "like" operator works #3', async () =>
 			{
 				request.conditions = [
 					'like', 'firstName', 'Pa%c',
 				];
 
-				const result = memoryDb.getData(request);
+				const result = await memoryDb.getData(request);
 
 				expect(result.length).toBeGreaterThan(0);
 
@@ -210,13 +210,13 @@ describe('Filtering data', () =>
 				}
 			});
 
-			test('Filtering by "like" operator works #4', () =>
+			test('Filtering by "like" operator works #4', async () =>
 			{
 				request.conditions = [
 					'like', 'firstName', 'P.tr.c',
 				];
 
-				const result = memoryDb.getData(request);
+				const result = await memoryDb.getData(request);
 
 				expect(result.length).toBeGreaterThan(0);
 
@@ -231,13 +231,13 @@ describe('Filtering data', () =>
 		});
 
 
-		test('Filtering by "or like" operator works', () =>
+		test('Filtering by "or like" operator works', async () =>
 		{
 			request.conditions = [
 				'or like', 'firstName', ['Pat%', 'Pet%'],
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -249,13 +249,13 @@ describe('Filtering data', () =>
 			}
 		});
 
-		test('Filtering by "not like" operator works', () =>
+		test('Filtering by "not like" operator works', async () =>
 		{
 			request.conditions = [
 				'not like', 'firstName', ['Ja%', '%usa%'],
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -266,13 +266,13 @@ describe('Filtering data', () =>
 			}
 		});
 
-		test('Filtering by "or not like" operator works', () =>
+		test('Filtering by "or not like" operator works', async () =>
 		{
 			request.conditions = [
 				'or not like', 'firstName', ['Ja%', '%usa%'],
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -283,13 +283,13 @@ describe('Filtering data', () =>
 				).toBeTruthy();
 		});
 
-		test('Filtering by ">" operator works', () =>
+		test('Filtering by ">" operator works', async () =>
 		{
 			request.conditions = [
 				'>', 'age', 23,
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -297,13 +297,13 @@ describe('Filtering data', () =>
 				expect(row.age).toBeGreaterThan(23);
 		});
 
-		test('Filtering by ">=" operator works', () =>
+		test('Filtering by ">=" operator works', async () =>
 		{
 			request.conditions = [
 				'>=', 'age', 23,
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -311,13 +311,13 @@ describe('Filtering data', () =>
 				expect(row.age).toBeGreaterThanOrEqual(23);
 		});
 
-		test('Filtering by "<" operator works', () =>
+		test('Filtering by "<" operator works', async () =>
 		{
 			request.conditions = [
 				'<', 'age', 23,
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -325,13 +325,13 @@ describe('Filtering data', () =>
 				expect(row.age).toBeLessThan(23);
 		});
 
-		test('Filtering by "<=" operator works', () =>
+		test('Filtering by "<=" operator works', async () =>
 		{
 			request.conditions = [
 				'<=', 'age', 23,
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -339,13 +339,13 @@ describe('Filtering data', () =>
 				expect(row.age).toBeLessThanOrEqual(23);
 		});
 
-		test('Filtering by "=" operator works', () =>
+		test('Filtering by "=" operator works', async () =>
 		{
 			request.conditions = [
 				'=', 'age', 23,
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -353,13 +353,13 @@ describe('Filtering data', () =>
 				expect(row.age).toEqual(23);
 		});
 
-		test('Filtering by "!=" operator works', () =>
+		test('Filtering by "!=" operator works', async () =>
 		{
 			request.conditions = [
 				'!=', 'age', 23,
 			];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBeGreaterThan(0);
 
@@ -367,16 +367,16 @@ describe('Filtering data', () =>
 				expect(row.age).not.toEqual(23);
 		});
 
-		test('Filtering by not existing operator fails', () =>
+		test('Filtering by not existing operator fails', async () =>
 		{
 			request.conditions = [
 				'neverexistingoperator'
 			];
 
-			expect(() => memoryDb.getData(request)).toThrowError();
+			expect(memoryDb.getData(request)).rejects.toBeDefined();
 		});
 
-		test('Filtering by not existing field fails', () =>
+		test('Filtering by not existing field fails', async () =>
 		{
 			const operators = [
 				'and', 'or', 'not', 'or not',
@@ -396,14 +396,14 @@ describe('Filtering data', () =>
 						operator, 'notexistingfield', 'neverexistingvalue'
 					];
 
-				expect(() => memoryDb.getData(request)).toThrowError();
+				expect(memoryDb.getData(request)).rejects.toBeDefined();
 			}
 		});
 	});
 });
 
 describe('Limiting data', () => {
-	test('Limiting data by amount works', () =>
+	test('Limiting data by amount works', async () =>
 	{
 		const testCases = [
 			5,
@@ -414,33 +414,33 @@ describe('Limiting data', () => {
 		{
 			request.limit = [testCase];
 
-			const result = memoryDb.getData(request);
+			const result = await memoryDb.getData(request);
 
 			expect(result.length).toBe(parseInt(testCase+''));
 		}
 	});
 
-	test('Limiting data by offset and amount works', () =>
+	test('Limiting data by offset and amount works', async () =>
 	{
 		request.limit = [0, 4];
-		let result = memoryDb.getData(request);
+		let result = await memoryDb.getData(request);
 		expect(result.length).toBe(4);
 	});
 
-	test('Limiting data by changed offset and amount works', () =>
+	test('Limiting data by changed offset and amount works', async () =>
 	{
 		request.limit = [1, 4];
-		let result = memoryDb.getData(request);
+		let result = await memoryDb.getData(request);
 		expect(result.length).toBe(4);
 	});
 
-	test('Limiting data by offset and amount works (checked by data)', () =>
+	test('Limiting data by offset and amount works (checked by data)', async () =>
 	{
 		request.limit = [0, 5];
-		let dataA = memoryDb.getData(request);
+		let dataA = await memoryDb.getData(request);
 
 		request.limit = [1, 4];
-		let dataB = memoryDb.getData(request);
+		let dataB = await memoryDb.getData(request);
 
 		expect(dataA.length).toBe(5);
 		expect(dataB.length).toBe(4);
@@ -448,17 +448,17 @@ describe('Limiting data', () => {
 		expect(JSON.stringify(dataA[4])).toBe(JSON.stringify(dataB[3]));
 	});
 
-	test('Limiting data with offset and amount greater than records count works', () =>
+	test('Limiting data with offset and amount greater than records count works', async () =>
 	{
 		request.limit = [5, 4];
-		let result = memoryDb.getData(request);
+		let result = await memoryDb.getData(request);
 		expect(result.length).not.toBe(4);
 	});
 
-	test('Limiting data by offset greater than records count works', () =>
+	test('Limiting data by offset greater than records count works', async () =>
 	{
 		request.limit = [10000, 4];
-		let result = memoryDb.getData(request);
+		let result = await memoryDb.getData(request);
 		expect(result.length).not.toBe(4);
 	});
 });
@@ -486,60 +486,60 @@ describe('Sorting data', () =>
 		return true;
 	}
 
-	test('Ordering numerical data ascending works', () =>
+	test('Ordering numerical data ascending works', async () =>
 	{
 		request.order = {
 			age: EOrderType.asc
 		};
 
-		const data = memoryDb.getData(request).map((v) => v.age);
+		const data = (await memoryDb.getData(request)).map((v) => v.age);
 
 		if(!isSortCorrect(data, EOrderType.asc))
 			throw new Error(`Sorting by number ascending does not work. Returned values: ${JSON.stringify(data)}`);
 	});
 
-	test('Ordering numerical data descending works', () =>
+	test('Ordering numerical data descending works', async () =>
 	{
 		request.order = {
 			age: EOrderType.desc
 		};
 
-		const data = memoryDb.getData(request).map((v) => v.age);
+		const data = (await memoryDb.getData(request)).map((v) => v.age);
 
 		if(!isSortCorrect(data, EOrderType.desc))
 			throw new Error(`Sorting by number descending does not work. Returned values: ${JSON.stringify(data)}`);
 	});
 
-	test('Ordering text data ascending works', () =>
+	test('Ordering text data ascending works', async () =>
 	{
 		request.order = {
 			firstName: EOrderType.asc
 		};
 
-		const data = memoryDb.getData(request).map((v) => v.firstName);
+		const data = (await memoryDb.getData(request)).map((v) => v.firstName);
 
 		if(!isSortCorrect(data, EOrderType.asc))
 			throw new Error(`Sorting by text ascending does not work. Returned values: ${JSON.stringify(data)}`);
 	});
 
-	test('Ordering text data descending works', () =>
+	test('Ordering text data descending works', async () =>
 	{
 		request.order = {
 			firstName: EOrderType.desc
 		};
 
-		const data = memoryDb.getData(request).map((v) => v.firstName);
+		const data = (await memoryDb.getData(request)).map((v) => v.firstName);
 
 		if(!isSortCorrect(data, EOrderType.desc))
 			throw new Error(`Sorting by text descending does not work. Returned values: ${JSON.stringify(data)}`);
 	});
 
-	test('Ordering by not existing column fails', () =>
+	test('Ordering by not existing column fails', async () =>
 	{
 		request.order = {
 			notexistingcolumn: EOrderType.asc
 		};
 
-		expect(() => memoryDb.getData(request)).toThrowError();
+		expect(memoryDb.getData(request)).rejects.toBeDefined();
 	});
 });

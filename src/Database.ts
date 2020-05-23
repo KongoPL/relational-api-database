@@ -7,7 +7,7 @@ export default class Database
 	constructor(private api: DatabaseApi, private cache?: DatabaseCache)
 	{}
 
-	getData(request: QueryRequest): any[]
+	getData(request: QueryRequest): Promise<any[]>
 	{
 		return this.api.getData(request);
 	}

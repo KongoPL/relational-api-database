@@ -50,36 +50,41 @@ test('Setting not allowed value fails', () => {
 
 describe('Finding user', () =>
 {
-	test('Finding by attributes works', () =>
+	test('Finding by attributes works', async () =>
 	{
-		const user = User.findOneByAttributes({
+		User.findOneByAttributes({
 			age: 15
-		});
-
-		expect(user).not.toBeNull();
-		expect(user).toBeInstanceOf(User);
-		expect(user.age).toEqual(15);
+		}).then((user) =>
+		{
+			expect(user).not.toBeNull();
+			expect(user).toBeInstanceOf(User);
+			expect(user.age).toEqual(15);
+		})
+			.catch(reason => expect(reason).not.toBeDefined());
 	});
 
-	test('Finding multiple by attributes works', () => {
+	test('Finding multiple by attributes works', async () => {
 		const users = User.findByAttributes({
 			lastName: 'Doe'
-		});
-
-		expect(Array.isArray(users)).toBeTruthy();
-		expect(users.length).toBeGreaterThan(1);
-
-		for(let user of users)
+		}).then((users) =>
 		{
-			expect(user).toBeInstanceOf(User);
-			expect(user.lastName).toBe('Doe');
-		}
+
+			expect(Array.isArray(users)).toBeTruthy();
+			expect(users.length).toBeGreaterThan(1);
+
+			for (let user of users)
+			{
+				expect(user).toBeInstanceOf(User);
+				expect(user.lastName).toBe('Doe');
+			}
+		})
+			.catch(reason => expect(reason).not.toBeDefined());
 	});
 });
 
 describe('Relations', () => {
-	test('Obtaining One - One relation works', () => {
-		const user = <User> User.findById(1);
+	test.only('Obtaining One - One relation works', async  () => {
+		const user = <User> await User.findById(1);
 
 		expect(user).not.toBeNull();
 		expect(user.city).toBeNull();
@@ -89,28 +94,30 @@ describe('Relations', () => {
 			expect(user.city).not.toBeNull();
 			expect(data).toStrictEqual(user.city);
 			expect((<City>user.city).name).toBe('Oklahoma');
-		}).catch(() => {
-			expect(false).toBe(true); // Should never execute
-		});
+		})
+			.catch(reason => expect(reason).not.toBeDefined());
 	});
 
-	test('Obtaining One - Many relation works', () => {
-		const city = <City> City.findById(1);
+	test('Obtaining One - Many relation works', async () => {
+		City.findById(1).then((city) =>
+		{
 
-		expect(city).not.toBeNull();
-		expect(city.users.length).toBe(0);
-		expect(city.id).not.toBeNull();
+			expect(city).not.toBeNull();
+			expect(city.users.length).toBe(0);
+			expect(city.id).not.toBeNull();
 
-		city.getRelation('users').then((data: User[]) => {
-			expect(city.users).not.toBeNull();
-			expect(data).toStrictEqual(city.users);
-			expect(data.length).toBeGreaterThan(0);
+			city.getRelation('users').then((data: User[]) =>
+			{
+				expect(city.users).not.toBeNull();
+				expect(data).toStrictEqual(city.users);
+				expect(data.length).toBeGreaterThan(0);
 
-			for(let row of data)
-				expect(row.cityId).toBe(1);
-		}).catch(() => {
-			expect(false).toBe(true); // Should never execute
-		});
+				for (let row of data)
+					expect(row.cityId).toBe(1);
+			})
+				.catch(reason => expect(reason).not.toBeDefined());
+		})
+			.catch(reason => expect(reason).not.toBeDefined());
 	});
 
 	test.todo('Obtaining Many - Many relation works');

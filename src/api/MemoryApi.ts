@@ -11,7 +11,7 @@ export default class MemoryApi extends DatabaseApi
 	}
 
 
-	getData(query: QueryRequest)
+	async getData(query: QueryRequest): Promise<any[]>
 	{
 		const isQueryValid = query.validate();
 
