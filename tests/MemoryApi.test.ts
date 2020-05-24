@@ -1,6 +1,6 @@
-import MemoryApi from "../api/MemoryApi";
-import QueryRequest, {EOrderType} from "../QueryRequest";
-import memoryApiDb from "./mock-databases/MemoryApiDb";
+import {MemoryApi} from "./api/MemoryApi";
+import {QueryRequest, EOrderType} from "./QueryRequest";
+import {memoryApiDb} from "./mock-databases/MemoryApiDb";
 
 const memoryDb = new MemoryApi();
 let request;

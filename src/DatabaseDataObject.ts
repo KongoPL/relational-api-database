@@ -1,7 +1,7 @@
-import Database from "./Database";
-import QueryRequest, {ICondition, TLimit, TOrder} from "./QueryRequest";
+import {Database} from "./Database";
+import {QueryRequest, ICondition, TLimit, TOrder} from "./QueryRequest";
 
-export default abstract class DatabaseDataObject<ModelClass>
+export abstract class DatabaseDataObject<ModelClass>
 {
 	static db;
 

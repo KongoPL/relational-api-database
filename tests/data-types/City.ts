@@ -1,7 +1,7 @@
-import DatabaseDataObject, {ERelationType} from "../../DatabaseDataObject";
-import User from "./User";
+import {DatabaseDataObject, ERelationType} from '../DatabaseDataObject';
+import {User} from "./User";
 
-export default class City extends DatabaseDataObject<City>
+export class City extends DatabaseDataObject<City>
 {
 	public id: number;
 	public name: string;

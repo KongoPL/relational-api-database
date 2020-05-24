@@ -1,4 +1,4 @@
-const memoryApiDb = {
+export const memoryApiDb = {
 	users: [
 		{
 			id: 1,
@@ -51,5 +51,3 @@ const memoryApiDb = {
 		}
 	]
 };
-
-export default memoryApiDb;

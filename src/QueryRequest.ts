@@ -1,4 +1,4 @@
-export default class QueryRequest
+export class QueryRequest
 {
 	public queryType: EQueryType | string = EQueryType.select;
 	// public fields: string[] = ['*'];

@@ -1,9 +1,9 @@
-import User from "./data-types/User";
-import DatabaseDataObject from "../DatabaseDataObject";
-import Database from "../Database";
-import MemoryApi from "../api/MemoryApi";
-import memoryApiDb from "./mock-databases/MemoryApiDb";
-import City from "./data-types/City";
+import {User} from "./data-types/User";
+import {DatabaseDataObject} from "../src/DatabaseDataObject";
+import {Database} from "../src/Database";
+import {MemoryApi} from "../src/api/MemoryApi";
+import {memoryApiDb} from "./mock-databases/MemoryApiDb";
+import {City} from "./data-types/City";
 
 beforeAll(() => {
 	const memoryApi = new MemoryApi();

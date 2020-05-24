@@ -1,6 +1,6 @@
-import QueryRequest from "./QueryRequest";
+import {QueryRequest} from "./QueryRequest";
 
-export default abstract class DatabaseApi
+export abstract class DatabaseApi
 {
 	abstract async getData(query: QueryRequest): Promise<any[]>;
 }

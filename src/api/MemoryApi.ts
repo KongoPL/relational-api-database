@@ -1,7 +1,7 @@
-import DatabaseApi from "../DatabaseApi";
-import QueryRequest, {EOrderType, ICondition, TLimit, TOrder} from "../QueryRequest";
+import {DatabaseApi} from "../DatabaseApi";
+import {QueryRequest, EOrderType, ICondition, TLimit, TOrder} from "../QueryRequest";
 
-export default class MemoryApi extends DatabaseApi
+export class MemoryApi extends DatabaseApi
 {
 	private data: any;
 

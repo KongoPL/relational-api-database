@@ -1,4 +1,4 @@
-import QueryRequest, {EOrderType} from "../QueryRequest";
+import {QueryRequest, EOrderType} from "./QueryRequest";
 
 function checkFilteringFailing(operators: string[], valueCases: any[], valueCaseIsArrayOfValues = false)
 {

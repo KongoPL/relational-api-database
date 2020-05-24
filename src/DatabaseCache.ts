@@ -1,4 +1,4 @@
-export default abstract class DatabaseCache
+export abstract class DatabaseCache
 {
 
 }
