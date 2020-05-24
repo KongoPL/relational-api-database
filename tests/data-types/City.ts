@@ -1,4 +1,4 @@
-import {DatabaseDataObject, ERelationType} from '../DatabaseDataObject';
+import {DatabaseDataObject, ERelationType} from '../../src/DatabaseDataObject';
 import {User} from "./User";
 
 export class City extends DatabaseDataObject<City>

@@ -3,7 +3,7 @@ import {QueryRequest, ICondition, TLimit, TOrder} from "./QueryRequest";
 
 export abstract class DatabaseDataObject<ModelClass>
 {
-	static db;
+	static db: Database;
 
 	private obtainedRelations: string[] = [];
 
@@ -81,7 +81,47 @@ export abstract class DatabaseDataObject<ModelClass>
 				break;
 
 			case ERelationType.MANY_MANY:
-				throw new Error('Not yet implemented!');
+				if(typeof relation.junctionModel === 'undefined' || typeof relation.junctionModel != 'string' || <any>relation.junctionModel instanceof DatabaseDataObject)
+					throw new Error('Many-to-Many relation requires "junctionModel" parameter to be string or DatabaseDataObject class!');
+
+				let leftRelation: [string, string] = ['', ''],
+					rightRelation: [string, string] = ['', ''],
+					hasMoreRelations = false;
+
+				// {my: their, their2: destination}
+				for(let key in relation.relation)
+				{
+					const destinationKey = relation.relation[key];
+
+					if(leftRelation[0] === '')
+						leftRelation = [key, destinationKey];
+					else if(rightRelation[0] === '')
+						rightRelation = [key, destinationKey];
+					else
+						hasMoreRelations = true;
+				}
+
+				if(hasMoreRelations || leftRelation[0] === '' || rightRelation[0] === '')
+					throw new Error(`Many-to-Many relation requires exactly 2 relations!`);
+
+				// Get junction table records:
+				const junctionTableName = typeof relation.junctionModel === 'string' ? relation.junctionModel : (<typeof DatabaseDataObject>relation.junctionModel).tableName(),
+					leftTableColumn = leftRelation[0],
+					middleTableLeftColumn = leftRelation[1],
+					middleTableRightColumn = rightRelation[0],
+					rightTableColumn = rightRelation[1];
+
+				const junctionData = await DatabaseDataObject.db.getData(new QueryRequest({
+					table: junctionTableName,
+					conditions: {
+						[middleTableLeftColumn]: this[leftTableColumn]
+					}
+				}));
+
+				data = await relation.model.findByAttributes({
+					[rightTableColumn]: junctionData.map((row) => row[middleTableRightColumn])
+				});
+
 				break;
 		}
 
@@ -185,7 +225,7 @@ export interface IRelation {
 	type: ERelationType | number,
 	model: typeof DatabaseDataObject,
 	relation: {[key: string]: string},
-	junctionModel?: typeof DatabaseDataObject | 'string',
+	junctionModel?: typeof DatabaseDataObject | string,
 	loading?: ERelationLoadingType | 'lazy' | 'eager'
 }
 

@@ -36,6 +36,12 @@ export class User extends DatabaseDataObject<User>
 				type: ERelationType.ONE_ONE,
 				model: City,
 				relation: {cityId: 'id'}
+			},
+			visitedCities: {
+				type: ERelationType.MANY_MANY,
+				model: City,
+				relation: {id: 'userId', cityId: 'id'},
+				junctionModel: 'visitedCities'
 			}
 		};
 	}

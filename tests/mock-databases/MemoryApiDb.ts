@@ -49,5 +49,26 @@ export const memoryApiDb = {
 			id: 3,
 			name: 'Paris',
 		}
+	],
+	visitedCities: [
+		{
+			userId: 1,
+			cityId: 1,
+		}, {
+			userId: 1,
+			cityId: 2,
+		}, {
+			userId: 1,
+			cityId: 3,
+		}, {
+			userId: 2,
+			cityId: 1,
+		}, {
+			userId: 2,
+			cityId: 1,
+		}, {
+			userId: 3,
+			cityId: 1,
+		}
 	]
 };
