@@ -3,26 +3,13 @@ import {City} from "./City";
 
 export class User extends DatabaseDataObject<User>
 {
-	public id: number;
-	public firstName: string;
-	public lastName : string;
-	public age: number;
-	public cityId: number | null;
+	public id: number = 0;
+	public firstName: string = '';
+	public lastName : string = '';
+	public age: number = 0;
+	public cityId: number | null = null;
 
-	public city: City | null;
-
-	constructor()
-	{
-		super();
-
-		this.id = 0;
-		this.firstName = '';
-		this.lastName = '';
-		this.age = 0;
-		this.cityId = null;
-
-		this.city = null;
-	}
+	public city: City | null = null;
 
 	static tableName(): string
 	{

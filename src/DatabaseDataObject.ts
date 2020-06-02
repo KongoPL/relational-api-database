@@ -5,6 +5,9 @@ export abstract class DatabaseDataObject<ModelClass>
 {
 	static db: Database;
 
+	public hasBeenInitialized: boolean = false;
+	public onInit: Promise<any>;
+
 	private obtainedRelations: string[] = [];
 
 	static injectDatabase(db: Database)
@@ -17,30 +20,37 @@ export abstract class DatabaseDataObject<ModelClass>
 		throw new Error('Table name is not given!');
 	}
 
-	constructor()
+	constructor(attributes: {[key: string]: any} = {})
 	{
-		this.init();
+		this.setAttributes(attributes, false);
+
+		this.onInit = new Promise(async (resolve) => {
+			await this.init();
+
+			resolve();
+		});
 	}
 
-	public init()
+	protected async init()
 	{
-		this.fetchEagerRelations();
+		await this.fetchEagerRelations();
+
+		this.hasBeenInitialized = true;
 	}
 
-	private fetchEagerRelations(): Promise<any>
+	private async fetchEagerRelations(): Promise<any>
 	{
-		const relations = this.relations(),
-			relationsPromises: Promise<any>[] = [];
+		const relations = this.relations();
 
 		for(let name in relations)
 		{
 			const relation = relations[name];
 
 			if(relation.loading === ERelationLoadingType.EAGER)
-				relationsPromises.push(this.getRelation(name));
+				await this.getRelation(name);
 		}
 
-		return Promise.all(relationsPromises);
+		return;
 	}
 
 	protected relations(): TRelation
@@ -125,6 +135,9 @@ export abstract class DatabaseDataObject<ModelClass>
 				break;
 		}
 
+		if(!this.obtainedRelations.includes(name))
+			this.obtainedRelations.push(name);
+
 		if(this.hasOwnProperty(name))
 			this[name] = data;
 
@@ -202,16 +215,20 @@ export abstract class DatabaseDataObject<ModelClass>
 			table: this.tableName(),
 		});
 
-		return DatabaseDataObject.db.getData(request)
-			.then((data) => data.map((v) =>
-			{
+		const models = (await DatabaseDataObject.db.getData(request))
+			.map(v => {
 				// @ts-ignore
 				const model = <ModelClass>(new this());
 
 				model.setAttributes(v);
 
 				return model;
-			}));
+			});
+		const initPromises = models.map(v => v.onInit);
+
+		await Promise.all(initPromises);
+
+		return models;
 	}
 }
 

@@ -85,7 +85,7 @@ describe('Finding user', () =>
 
 describe('Relations', () => {
 	test('Obtaining One - One relation works', async  () => {
-		const user = <User> await User.findById(1);
+		const user = await User.findById(1);
 
 		expect(user).not.toBeNull();
 		expect(user.city).toBeNull();
@@ -95,7 +95,7 @@ describe('Relations', () => {
 			expect(user.city).not.toBeNull();
 			expect(user.city).toBeInstanceOf(City);
 			expect(data).toStrictEqual(user.city);
-			expect((<City>user.city).name).toBe('Oklahoma');
+			expect(user.city.name).toBe('Oklahoma');
 		})
 			.catch(reason => expect(reason).not.toBeDefined());
 	});
