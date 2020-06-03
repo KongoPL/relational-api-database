@@ -6,9 +6,11 @@ import {City} from "./data-types/City";
 import {QueryRequest} from "../src/QueryRequest";
 import {DatabaseDataObject} from "../src/DatabaseDataObject";
 
+let db: Database;
+
 beforeAll(() => {
 	const memoryApi = new MemoryApi();
-	const db = new Database(memoryApi);
+	db = new Database(memoryApi);
 
 	memoryApi.loadDatabase(memoryApiDb);
 
@@ -61,7 +63,7 @@ describe('Finding user', () =>
 			expect(user).toBeInstanceOf(User);
 			expect(user.age).toEqual(15);
 		})
-			.catch(reason => expect(reason).not.toBeDefined());
+			.catch(fail);
 	});
 
 	test('Finding multiple by attributes works', async () => {
@@ -79,8 +81,36 @@ describe('Finding user', () =>
 				expect(user.lastName).toBe('Doe');
 			}
 		})
-			.catch(reason => expect(reason).not.toBeDefined());
+			.catch(fail);
 	});
+});
+
+describe('Attributes management', () => {
+	test('Getting attributes works', async () => {
+		const user = await User.findById(1);
+		const attributes = user.getAttributes();
+
+		expect('id' in attributes).toBeTruthy();
+		expect(attributes.id).toBe(user.id);
+		expect(user.getAttribute('id')).toBe(attributes.id);
+	});
+
+	test('Getting unwanted attributes fails', async () => {
+		const user = await User.findById(1);
+		const attributes = user.getAttributes();
+
+		// Unwanted methods:
+		expect('relations' in attributes).toBeFalsy();
+		expect('getAttributes' in attributes).toBeFalsy();
+
+		// Unwanted properties:
+		expect('db' in attributes).toBeFalsy();
+		expect('onInit' in attributes).toBeFalsy();
+		expect('obtainedRelations' in attributes).toBeFalsy();
+	});
+
+	test.todo('Setting attributes works');
+	test.todo('Checking attributes existence works');
 });
 
 describe('Relations', () => {
@@ -97,7 +127,7 @@ describe('Relations', () => {
 			expect(data).toStrictEqual(user.city);
 			expect(user.city.name).toBe('Oklahoma');
 		})
-			.catch(reason => expect(reason).not.toBeDefined());
+			.catch(fail);
 	});
 
 	test('Obtaining One - Many relation works', async () => {
@@ -119,9 +149,9 @@ describe('Relations', () => {
 					expect(row.cityId).toBe(1);
 				}
 			})
-				.catch(reason => expect(reason).not.toBeDefined());
+				.catch(fail);
 		})
-			.catch(reason => expect(reason).not.toBeDefined());
+			.catch(fail);
 	});
 
 	test('Obtaining Many - Many relation works', () => {
@@ -132,7 +162,7 @@ describe('Relations', () => {
 				conditions: {userId: 1}
 			});
 
-			const dbVisitedCities = await DatabaseDataObject.db.getData(request);
+			const dbVisitedCities = await db.getData(request);
 
 			user.getRelation('visitedCities').then((visitedCities) => {
 				expect(Array.isArray(visitedCities)).toBeTruthy();
@@ -142,10 +172,11 @@ describe('Relations', () => {
 				for(let city of visitedCities)
 					expect(city).toBeInstanceOf(City);
 			})
-				.catch(reason => expect(reason).not.toBeDefined());
+				.catch(fail);
 		})
-			.catch(reason => expect(reason).not.toBeDefined());
+			.catch(fail);
 	});
+
 	test.todo(`Reobtaining relation won't request for data except it has been asked to refresh`);
 	test.todo(`Updating related record separately, won't update it on model except, relation is refreshed`);
 });

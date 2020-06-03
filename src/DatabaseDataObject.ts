@@ -3,9 +3,8 @@ import {QueryRequest, ICondition, TLimit, TOrder} from "./QueryRequest";
 
 export abstract class DatabaseDataObject<ModelClass>
 {
-	static db: Database;
+	protected static db: Database;
 
-	public hasBeenInitialized: boolean = false;
 	public onInit: Promise<any>;
 
 	private obtainedRelations: string[] = [];
@@ -22,7 +21,7 @@ export abstract class DatabaseDataObject<ModelClass>
 
 	constructor(attributes: {[key: string]: any} = {})
 	{
-		this.setAttributes(attributes, false);
+		this.setAttributes(attributes);
 
 		this.onInit = new Promise(async (resolve) => {
 			await this.init();
@@ -34,8 +33,6 @@ export abstract class DatabaseDataObject<ModelClass>
 	protected async init()
 	{
 		await this.fetchEagerRelations();
-
-		this.hasBeenInitialized = true;
 	}
 
 	private async fetchEagerRelations(): Promise<any>
@@ -58,6 +55,56 @@ export abstract class DatabaseDataObject<ModelClass>
 		return {};
 	}
 
+	protected unwantedAttributes(): string[]
+	{
+		return ['db', 'onInit', 'obtainedRelations'];
+	}
+
+	getAttributes(): {[key: string]: any}
+	{
+		const attributes = Object.getOwnPropertyDescriptors(this),
+			modelAttributes = {},
+			unwantedAttributes = this.unwantedAttributes();
+
+		for(let attribute in attributes)
+			 if(!unwantedAttributes.includes(attribute))
+				modelAttributes[attribute] = attributes[attribute].value;
+
+		return modelAttributes;
+	}
+
+
+	getAttribute(name: string)
+	{
+		if(!this.hasAttribute(name))
+			throw new Error(`Attribute "${name}" does not exists in model!`);
+
+		return Object.getOwnPropertyDescriptor(this, name)?.value;
+	}
+
+	hasAttribute(name: string): boolean
+	{
+		return this.hasOwnProperty(name) && !this.unwantedAttributes().includes(name);
+	}
+
+
+	setAttributes(attributes: {[key: string]: string | number | bigint | boolean | object})
+	{
+		for(let key in attributes)
+			this.setAttribute(key, attributes[key]);
+	}
+
+	setAttribute(name: string, value: string | number | bigint | boolean | object, safe: boolean = true)
+	{
+		if(typeof value === 'function')
+			throw new Error(`Attribute value can't be function!`);
+
+		if(this.hasAttribute(name))
+			this[name] = value;
+		else if(safe)
+			throw new Error(`Attribute "${name}" does not exists in model!`);
+	}
+
 	public async getRelation(name: string, refresh: boolean = false): Promise<any>
 	{
 		const relations = this.relations();
@@ -68,7 +115,7 @@ export abstract class DatabaseDataObject<ModelClass>
 		const relation = relations[name];
 		let data;
 
-		if(this.hasOwnProperty(name) && this.obtainedRelations.includes(name) && !refresh)
+		if(this.hasRelation(name) && !refresh)
 			return this[name];
 
 		switch (relation.type)
@@ -138,33 +185,15 @@ export abstract class DatabaseDataObject<ModelClass>
 		if(!this.obtainedRelations.includes(name))
 			this.obtainedRelations.push(name);
 
-		if(this.hasOwnProperty(name))
+		if(this.hasRelation(name, false))
 			this[name] = data;
 
 		return data;
 	}
 
-
-	setAttributes(attributes: {[key: string]: string | number | bigint | boolean | object})
+	public hasRelation(name: string, obtained: boolean = true)
 	{
-		for(let key in attributes)
-		{
-			const value = attributes[key];
-
-			if(typeof value === 'function')
-				throw new Error(`Attribute value can't be function!`);
-
-			if(this.hasOwnProperty(key))
-				this[key] = value;
-			else
-				throw new Error(`Property "${key}" does not exists!`);
-		}
-	}
-
-
-	static async findById(id: string | number)
-	{
-		return this.findOneByAttributes({id});
+		return this.hasOwnProperty(name) && this.obtainedRelations.includes(name);
 	}
 
 
