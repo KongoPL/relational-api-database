@@ -3,15 +3,18 @@ export class QueryRequest
 	public queryType: EQueryType | string = EQueryType.select;
 	// public fields: string[] = ['*'];
 	public table: string = '';
-	public conditions: ICondition = [];
+	public conditions: TCondition = [];
 	public limit: TLimit = [];
 	public order: TOrder = {};
 
+	public data: TData = [];
+
 	constructor(params?: {
 		table?: string,
-		conditions?: ICondition,
+		conditions?: TCondition,
 		limit?: TLimit,
-		order?: TOrder
+		order?: TOrder,
+		data?: TData
 	})
 	{
 		for(let key in params)
@@ -53,6 +56,16 @@ export class QueryRequest
 			if(isValidOrder !== true)
 				return isValidOrder;
 		}
+
+		if(this.hasData())
+		{
+			const isValidData = this.checkData();
+
+			if(isValidData !== true)
+				return isValidData;
+		}
+		else if(this.queryType === EQueryType.insert)
+			return 'Data is required for insert query!';
 
 		return true;
 	}
@@ -196,6 +209,27 @@ export class QueryRequest
 
 	 	return true;
 	 }
+
+
+	 public hasData(): boolean
+	 {
+	 	return (Array.isArray(this.data) && this.data.length > 0);
+	 }
+
+
+	 public checkData(): true | string
+	 {
+		for(let row of this.data)
+		{
+			for(let key in row)
+			{
+				if(typeof row[key] === 'function')
+					return `Value in row can't be a function!`;
+			}
+		}
+
+		return true;
+	 }
 }
 
 export enum EQueryType
@@ -212,9 +246,9 @@ export enum EOrderType
 	desc = 'desc',
 }
 
-export type ICondition = [
+export type TCondition = [
 	'and' | 'or' | 'not' | 'or not',
-	...(TConditionParameters | ICondition)[]
+	...(TConditionParameters | TCondition)[]
 ] | [
 	'between' | 'not between' | 'like' | 'or like' | 'not like' | 'or not like',
 	string,
@@ -233,6 +267,7 @@ type TConditionParameters = {[key: string]: string | number | boolean | bigint} 
 
 export type TLimit = [(number|string)?, (number|string)?];
 export type TOrder = {[key:string]: EOrderType | 'asc' | 'desc'};
+export type TData = {[key: string]: any}[];
 
 function isNumeric(v, allowFloatValue = true)
 {

@@ -1,5 +1,5 @@
 import {Database} from "./Database";
-import {QueryRequest, ICondition, TLimit, TOrder} from "./QueryRequest";
+import {QueryRequest, TCondition, TLimit, TOrder} from "./QueryRequest";
 
 export abstract class DatabaseDataObject<ModelClass>
 {
@@ -220,7 +220,7 @@ export abstract class DatabaseDataObject<ModelClass>
 
 
 	static async findOne(params: {
-		conditions?: ICondition,
+		conditions?: TCondition,
 		order?: TOrder
 		// @ts-ignore
 	} = {}): Promise<ModelClass>
@@ -233,7 +233,7 @@ export abstract class DatabaseDataObject<ModelClass>
 
 
 	static async find(params: {
-		conditions?: ICondition,
+		conditions?: TCondition,
 		limit?: TLimit,
 		order?: TOrder
 		// @ts-ignore
@@ -258,6 +258,11 @@ export abstract class DatabaseDataObject<ModelClass>
 		await Promise.all(initPromises);
 
 		return models;
+	}
+
+	public toObject(): object
+	{
+		return JSON.parse(JSON.stringify(this.getAttributes()));
 	}
 }
 

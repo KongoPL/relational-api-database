@@ -1,13 +1,103 @@
 import {DatabaseApi} from "../DatabaseApi";
-import {QueryRequest, EOrderType, ICondition, TLimit, TOrder} from "../QueryRequest";
+import {QueryRequest, EOrderType, TCondition, TLimit, TOrder} from "../QueryRequest";
 
 export class MemoryApi extends DatabaseApi
 {
 	private data: any;
+	private idColumns: {[key: string]: string} = {};
+	private tablesAutoIncrements: {[key: string]: number | false} = {};
 
-	loadDatabase(data: any)
+	constructor(data?: any, idColumn?: TIdColumns)
 	{
-		this.data = data;
+		super();
+
+		if(typeof data === "object")
+			this.loadDatabase(data);
+
+		if(typeof idColumn !== 'undefined')
+			this.setIdColumn(idColumn);
+	}
+
+
+	public loadDatabase(data: object)
+	{
+		const dataCopy = JSON.parse(JSON.stringify(data));
+
+		if('_meta' in dataCopy)
+		{
+			this.loadMeta(dataCopy._meta);
+
+			delete dataCopy._meta;
+		}
+
+		this.data = dataCopy;
+
+		this.obtainAutoIncrementsForTables();
+	}
+
+
+	public getDatabase(): {_meta: TMetaData} & {[key: string]: any[]}
+	{
+		return {
+			_meta: {
+				idColumns: JSON.parse(JSON.stringify(this.idColumns))
+			},
+			...JSON.parse(JSON.stringify(this.data))
+		};
+	}
+
+
+	private loadMeta(metaData: TMetaData)
+	{
+		if(typeof metaData.idColumns !== 'undefined')
+			this.setIdColumn(metaData.idColumns);
+	}
+
+
+	public setIdColumn(idColumn: TIdColumns)
+	{
+		if(idColumn === false)
+			return;
+
+		if(typeof idColumn == 'string')
+			for(let tableName in this.data)
+				this.idColumns[tableName] = idColumn;
+		else if(typeof idColumn === 'object')
+			this.idColumns = JSON.parse(JSON.stringify(idColumn));
+		else
+			throw new Error('Invalid format for ID column!');
+	}
+
+
+	private obtainAutoIncrementsForTables()
+	{
+		this.tablesAutoIncrements = {};
+
+		for(let tableName in this.data)
+		{
+			const idColumn = this.getTableIdColumn(tableName);
+
+			if(!idColumn)
+				continue;
+
+			const ids = this.data.map((row) => row[idColumn]);
+			const maxId = Math.max(...ids);
+
+			if(Number.isFinite(maxId))
+				this.tablesAutoIncrements[tableName] = maxId + 1;
+			else if(ids.some((v) => typeof v === 'number'))
+				throw new Error(`At least one record in table "${tableName}" doesn't have ID Column "${idColumn}" or it's value isn't number!`);
+			else
+				this.tablesAutoIncrements[tableName] = false;
+		}
+	}
+
+	private getTableIdColumn(tableName: string): string | false
+	{
+		if(tableName in this.idColumns)
+			return this.idColumns[tableName];
+		else
+			return false;
 	}
 
 
@@ -18,10 +108,7 @@ export class MemoryApi extends DatabaseApi
 		if(isQueryValid !== true)
 			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
 
-		let data = JSON.parse(JSON.stringify(this.getTable(query.table)));
-
-		if(!data)
-			throw new Error(`Table ${query.table} does not exists!`);
+		let data = this.getTable(query.table);
 
 		if(query.hasConditions())
 			data = data.filter((r) => this.doesRecordMeetsConditions(r, query.conditions));
@@ -33,20 +120,76 @@ export class MemoryApi extends DatabaseApi
 			data = this.limitData(data, query.limit);
 
 
-		return data;
+		return JSON.parse(JSON.stringify(data));
+	}
+
+
+	async insertData(query: QueryRequest): Promise<(string | number)[] | any>
+	{
+		const isQueryValid = query.validate();
+
+		if(isQueryValid !== true)
+			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
+
+		const table = this.getTable(query.table),
+			data: any[] = JSON.parse(JSON.stringify(query.data));
+		let returnedData;
+
+		// Auto increment assignment:
+		const idColumn = this.getTableIdColumn(query.table);
+
+		if(idColumn)
+		{
+			const autoIncrements = this.getAutoIncrementForTable(query.table, data.length);
+
+			if(autoIncrements)
+			{
+				for(let i = 0; i < data.length; i++)
+					data[i][idColumn] = autoIncrements[i];
+
+				returnedData = autoIncrements;
+			}
+		}
+
+		table.push(...data);
+
+		return returnedData;
+	}
+
+
+	private getAutoIncrementForTable(tableName: string, amount: number = 1): number[] | false
+	{
+		if(tableName in this.tablesAutoIncrements === false
+			|| this.tablesAutoIncrements[tableName] === false)
+			return false;
+
+		const autoIncrements: number[] = [];
+
+		for(let i = 0; i < amount; i++)
+			autoIncrements.push((<number>this.tablesAutoIncrements[tableName])++);
+
+		return autoIncrements;
 	}
 
 
 	private getTable(tableName: string)
 	{
-		if(tableName in this.data)
+		if(this.hasTable(tableName))
 			return this.data[tableName];
+		else
+			throw new Error(`Table ${tableName} does not exists!`);
+	}
+
+
+	private hasTable(tableName: string): boolean
+	{
+		return tableName in this.data;
 	}
 
 	/**
 	 * @see https://www.yiiframework.com/doc/api/2.0/yii-db-queryinterface#where()-detail
 	 */
-	private doesRecordMeetsConditions( record: any, condition: ICondition ): boolean
+	private doesRecordMeetsConditions( record: any, condition: TCondition ): boolean
 	{
 		if(Array.isArray(condition))
 		{
@@ -56,7 +199,7 @@ export class MemoryApi extends DatabaseApi
 			{
 				for (let i = 1; i < condition.length; i++)
 				{
-					let meetConditions = this.doesRecordMeetsConditions(record, <ICondition>condition[i]);
+					let meetConditions = this.doesRecordMeetsConditions(record, <TCondition>condition[i]);
 
 					if(meetConditions && ['or', 'or not', 'not'].some((v) => v === operator))
 						return operator === 'or';
@@ -172,4 +315,9 @@ export class MemoryApi extends DatabaseApi
 			return 0;
 		});
 	}
+}
+
+type TIdColumns = string | false | {[key: string]: string};
+export type TMetaData = {
+	idColumns?: TIdColumns
 }

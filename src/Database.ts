@@ -11,4 +11,9 @@ export class Database
 	{
 		return this.api.getData(request);
 	}
+
+	insertData(request: QueryRequest): Promise<(string | number)[] | any>
+	{
+		return this.api.insertData(request);
+	}
 }
