@@ -4,19 +4,10 @@ import {MyDatabaseDataObject} from "./MyDatabaseDataObject";
 
 export class City extends MyDatabaseDataObject<City>
 {
-	public id: number;
-	public name: string;
+	public id: number = 0;
+	public name: string = '';
 
-	public users: User[];
-
-	constructor()
-	{
-		super();
-
-		this.id = 0;
-		this.name = '';
-		this.users = [];
-	}
+	public users: User[] = [];
 
 	static tableName(): string
 	{

@@ -17,41 +17,68 @@ beforeAll(() => {
 	DatabaseDataObject.injectDatabase(db);
 });
 
-test('Setting attributes works', () => {
-	const user = new User();
+describe('Attributes management', () => {
+	test('Getting attributes works', async () => {
+		const user = await User.findById(1);
+		const attributes = user.getAttributes();
 
-	user.setAttributes({
-		firstName: 'John',
-		lastName: 'Doe'
+		expect('id' in attributes).toBeTruthy();
+		expect(attributes.id).toBe(user.id);
+		expect(user.getAttribute('id')).toBe(attributes.id);
 	});
 
-	expect(user.firstName).toBe('John');
-	expect(user.lastName).toBe('Doe');
-});
+	test('Getting unwanted attributes fails', async () => {
+		const user = await User.findById(1);
+		const attributes = user.getAttributes();
 
-test('Setting not existing attribute fails', () => {
-	const user = new User();
+		// Unwanted methods:
+		expect('relations' in attributes).toBeFalsy();
+		expect('getAttributes' in attributes).toBeFalsy();
 
-	expect(() =>
-	{
+		// Unwanted properties:
+		expect('db' in attributes).toBeFalsy();
+		expect('onInit' in attributes).toBeFalsy();
+		expect('obtainedRelations' in attributes).toBeFalsy();
+	});
+
+	test('Setting attributes works', () => {
+		const user = new User();
+
 		user.setAttributes({
-			notexistingcolumn: 'Some value'
+			firstName: 'John',
+			lastName: 'Doe'
 		});
-	}).toThrowError();
+
+		expect(user.firstName).toBe('John');
+		expect(user.lastName).toBe('Doe');
+	});
+
+	test('Setting not existing attribute fails', () => {
+		const user = new User();
+
+		expect(() =>
+		{
+			user.setAttributes({
+				notexistingcolumn: 'Some value'
+			});
+		}).toThrowError();
+	});
+
+	test('Setting not allowed value fails', () => {
+		const user = new User();
+
+		expect(() =>
+		{
+			user.setAttributes({
+				firstName: () => {}
+			});
+		}).toThrowError();
+	});
+
+	test.todo('Checking attributes existence works');
 });
 
-test('Setting not allowed value fails', () => {
-	const user = new User();
-
-	expect(() =>
-	{
-		user.setAttributes({
-			firstName: () => {}
-		});
-	}).toThrowError();
-});
-
-describe('Finding user', () =>
+describe('Finding data', () =>
 {
 	test('Finding by attributes works', async () =>
 	{
@@ -83,34 +110,6 @@ describe('Finding user', () =>
 		})
 			.catch(fail);
 	});
-});
-
-describe('Attributes management', () => {
-	test('Getting attributes works', async () => {
-		const user = await User.findById(1);
-		const attributes = user.getAttributes();
-
-		expect('id' in attributes).toBeTruthy();
-		expect(attributes.id).toBe(user.id);
-		expect(user.getAttribute('id')).toBe(attributes.id);
-	});
-
-	test('Getting unwanted attributes fails', async () => {
-		const user = await User.findById(1);
-		const attributes = user.getAttributes();
-
-		// Unwanted methods:
-		expect('relations' in attributes).toBeFalsy();
-		expect('getAttributes' in attributes).toBeFalsy();
-
-		// Unwanted properties:
-		expect('db' in attributes).toBeFalsy();
-		expect('onInit' in attributes).toBeFalsy();
-		expect('obtainedRelations' in attributes).toBeFalsy();
-	});
-
-	test.todo('Setting attributes works');
-	test.todo('Checking attributes existence works');
 });
 
 describe('Relations', () => {
@@ -177,6 +176,45 @@ describe('Relations', () => {
 			.catch(fail);
 	});
 
+	test.todo('Fetching relations with eager loading works');
 	test.todo(`Reobtaining relation won't request for data except it has been asked to refresh`);
 	test.todo(`Updating related record separately, won't update it on model except, relation is refreshed`);
+});
+
+describe('Serialization', () =>
+{
+	test('Converting to objects works', () =>
+	{
+		const tags = ['Lets', 'Check', 'References'],
+			city = new City(),
+			user = new User();
+
+		city.setAttributes({
+			id: 55,
+			name: 'Kansas'
+		});
+		user.setAttributes({
+			id: 1,
+			firstName: 'Susan',
+			tags: tags,
+			city: city
+		});
+
+		const serialized = user.toObject();
+
+		expect(serialized.id).toBe(1);
+		expect(serialized.firstName).toBe('Susan');
+		expect(serialized.tags).not.toBe(tags);
+		expect(Array.isArray(serialized.tags)).toBeTruthy();
+		expect(serialized.tags.length).toBe(tags.length);
+
+		for (let key in tags)
+			expect(serialized.tags[key]).toBe(tags[key]);
+
+		expect(serialized.city).not.toBe(city);
+		expect(serialized.city).not.toBeInstanceOf(City);
+		expect(serialized.city).toBeInstanceOf(Object);
+		expect(serialized.city.id).toBe(55);
+		expect(serialized.city.name).toBe('Kansas');
+	});
 });

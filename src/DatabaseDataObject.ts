@@ -19,10 +19,8 @@ export abstract class DatabaseDataObject<ModelClass>
 		throw new Error('Table name is not given!');
 	}
 
-	constructor(attributes: {[key: string]: any} = {})
+	constructor()
 	{
-		this.setAttributes(attributes);
-
 		this.onInit = new Promise(async (resolve) => {
 			await this.init();
 
@@ -88,10 +86,10 @@ export abstract class DatabaseDataObject<ModelClass>
 	}
 
 
-	setAttributes(attributes: {[key: string]: string | number | bigint | boolean | object})
+	setAttributes(attributes: {[key: string]: string | number | bigint | boolean | object}, safe: boolean = true)
 	{
 		for(let key in attributes)
-			this.setAttribute(key, attributes[key]);
+			this.setAttribute(key, attributes[key], safe);
 	}
 
 	setAttribute(name: string, value: string | number | bigint | boolean | object, safe: boolean = true)
@@ -99,9 +97,9 @@ export abstract class DatabaseDataObject<ModelClass>
 		if(typeof value === 'function')
 			throw new Error(`Attribute value can't be function!`);
 
-		if(this.hasAttribute(name))
+		if(this.hasAttribute(name) || !safe)
 			this[name] = value;
-		else if(safe)
+		else
 			throw new Error(`Attribute "${name}" does not exists in model!`);
 	}
 
@@ -260,7 +258,7 @@ export abstract class DatabaseDataObject<ModelClass>
 		return models;
 	}
 
-	public toObject(): object
+	public toObject(): {[key: string]: any}
 	{
 		return JSON.parse(JSON.stringify(this.getAttributes()));
 	}

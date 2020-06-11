@@ -1,6 +1,6 @@
 export class QueryRequest
 {
-	public queryType: EQueryType | string = EQueryType.select;
+	public queryType: EQueryType | 'select' | 'update' | 'delete' | 'insert' = EQueryType.select;
 	// public fields: string[] = ['*'];
 	public table: string = '';
 	public conditions: TCondition = [];
@@ -10,6 +10,7 @@ export class QueryRequest
 	public data: TData = [];
 
 	constructor(params?: {
+		queryType?: EQueryType | string,
 		table?: string,
 		conditions?: TCondition,
 		limit?: TLimit,
@@ -221,6 +222,9 @@ export class QueryRequest
 	 {
 		for(let row of this.data)
 		{
+			if(row instanceof Object === false)
+				return 'Row can be only strict object!';
+
 			for(let key in row)
 			{
 				if(typeof row[key] === 'function')

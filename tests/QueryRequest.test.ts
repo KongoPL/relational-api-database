@@ -1,4 +1,4 @@
-import {QueryRequest, EOrderType} from "./QueryRequest";
+import {QueryRequest, EOrderType} from "../src/QueryRequest";
 
 function checkFilteringFailing(operators: string[], valueCases: any[], valueCaseIsArrayOfValues = false)
 {
@@ -42,7 +42,7 @@ function checkFiltering(shouldPass: boolean, operators: string[], valueCases: an
 	}
 }
 
-describe('Query request table name checks', function ()
+describe('Query request table name checks', () =>
 {
 	test('Request without table name fails', () => {
 		const request = new QueryRequest();
@@ -254,7 +254,8 @@ describe('Query request filtering checks', () =>
 	});
 });
 
-describe('Query request limiting checks', () => {
+describe('Query request limiting checks', () =>
+{
 	test('Query with limiting only by amount works', () => {
 		const testCases: [string|number][] = [
 			[0],
@@ -357,7 +358,8 @@ describe('Query request limiting checks', () => {
 	});
 });
 
-describe('Query request ordering checks', () => {
+describe('Query request ordering checks', () =>
+{
 	test('Ordering works', () => {
 		const testCases: any[] = [
 			EOrderType.asc,
@@ -400,5 +402,107 @@ describe('Query request ordering checks', () => {
 
 			expect(request.validate()).not.toBe(true);
 		}
+	});
+});
+
+describe('Query request data inserting checks', () =>
+{
+	test('Inserting data works', () => {
+		const request = new QueryRequest({
+			queryType: 'insert',
+			table: 'any',
+			data: [
+				{
+					id: 1,
+					name: 'John',
+					isAdmin: true,
+					nameChars: [
+						'J', 'o', 'h', 'n'
+					],
+					dates: {
+						firstLogin: "2020-06-11 11:41:00"
+					}
+				}, {
+					id: 1,
+					name: 'Susan',
+					isAdmin: true,
+					nameChars: [
+						'S', 'u', 's', 'a', 'n'
+					],
+					dates: {
+						firstLogin: "2020-06-11 11:42:00"
+					}
+				}
+			]
+		});
+
+		expect(request.validate()).toStrictEqual(true);
+	});
+
+	test('Inserting data with different structures works', () => {
+		// Reason behind this test is that QueryRequest knows nothing about data structure.
+		// There is no reason why QueryRequest should mark this structure as invalid because
+		// data type for each field is correct and maybe there are also some default values for fields,
+		// that will be provided by API and there is no need to specify them in the request.
+
+		const request = new QueryRequest({
+			queryType: 'insert',
+			table: 'any',
+			data: [
+				{
+					id: 1,
+					name: 'John',
+					isAdmin: true,
+				}, {
+					id: 1,
+					categoryName: 'Shoes',
+					parentCategory: 15,
+					sort: 55
+				}
+			]
+		});
+
+		expect(request.validate()).toStrictEqual(true);
+	});
+
+	test('Inserting data with wrong data types will fail', () => {
+		const request = new QueryRequest({
+			queryType: 'insert',
+			table: 'any',
+			data: [
+				{
+					id: 1,
+					name: () => {}
+				}
+			]
+		});
+
+		expect(request.validate()).not.toStrictEqual(true);
+
+	});
+
+	test('Inserting data that is not an array of objects will fail', () => {
+		const request = new QueryRequest({
+			queryType: 'insert',
+			table: 'any',
+			data: [
+				// @ts-ignore
+				false
+			]
+		});
+
+		expect(request.validate()).not.toStrictEqual(true);
+
+		request.data[0] = 'Hello';
+
+		expect(request.validate()).not.toStrictEqual(true);
+
+		request.data[0] = [1, 2, 3];
+
+		expect(request.validate()).not.toStrictEqual(true);
+
+		request.data[0] = () => {};
+
+		expect(request.validate()).not.toStrictEqual(true);
 	});
 });
