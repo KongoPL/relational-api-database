@@ -1,6 +1,8 @@
 export const memoryApiDb = {
 	_meta: {
-		idColumn: 'id'
+		idColumns: {
+			users: 'id',
+		}
 	},
 	users: [
 		{

@@ -409,7 +409,7 @@ describe('Query request data inserting checks', () =>
 {
 	test('Inserting data works', () => {
 		const request = new QueryRequest({
-			queryType: 'insert',
+			type: 'insert',
 			table: 'any',
 			data: [
 				{
@@ -446,7 +446,7 @@ describe('Query request data inserting checks', () =>
 		// that will be provided by API and there is no need to specify them in the request.
 
 		const request = new QueryRequest({
-			queryType: 'insert',
+			type: 'insert',
 			table: 'any',
 			data: [
 				{
@@ -467,7 +467,7 @@ describe('Query request data inserting checks', () =>
 
 	test('Inserting data with wrong data types will fail', () => {
 		const request = new QueryRequest({
-			queryType: 'insert',
+			type: 'insert',
 			table: 'any',
 			data: [
 				{
@@ -483,7 +483,7 @@ describe('Query request data inserting checks', () =>
 
 	test('Inserting data that is not an array of objects will fail', () => {
 		const request = new QueryRequest({
-			queryType: 'insert',
+			type: 'insert',
 			table: 'any',
 			data: [
 				// @ts-ignore

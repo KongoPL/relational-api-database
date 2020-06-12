@@ -1,6 +1,6 @@
 export class QueryRequest
 {
-	public queryType: EQueryType | 'select' | 'update' | 'delete' | 'insert' = EQueryType.select;
+	public type: EQueryType | 'select' | 'update' | 'delete' | 'insert' = EQueryType.select;
 	// public fields: string[] = ['*'];
 	public table: string = '';
 	public conditions: TCondition = [];
@@ -10,7 +10,7 @@ export class QueryRequest
 	public data: TData = [];
 
 	constructor(params?: {
-		queryType?: EQueryType | string,
+		type?: EQueryType | 'select' | 'update' | 'delete' | 'insert',
 		table?: string,
 		conditions?: TCondition,
 		limit?: TLimit,
@@ -65,7 +65,7 @@ export class QueryRequest
 			if(isValidData !== true)
 				return isValidData;
 		}
-		else if(this.queryType === EQueryType.insert)
+		else if(this.type === EQueryType.insert)
 			return 'Data is required for insert query!';
 
 		return true;
@@ -222,7 +222,7 @@ export class QueryRequest
 	 {
 		for(let row of this.data)
 		{
-			if(row instanceof Object === false)
+			if(typeof row !== "object" || Array.isArray(row))
 				return 'Row can be only strict object!';
 
 			for(let key in row)

@@ -1,5 +1,5 @@
-import {MemoryApi} from "./api/MemoryApi";
-import {QueryRequest, EOrderType} from "./QueryRequest";
+import {MemoryApi} from "../src/api/MemoryApi";
+import {QueryRequest, EOrderType} from "../src/QueryRequest";
 import {memoryApiDb} from "./mock-databases/MemoryApiDb";
 
 const memoryDb = new MemoryApi();
@@ -12,7 +12,8 @@ beforeEach(() => {
 	request.table = 'users';
 });
 
-test(`Check whether validation method for request is called`, () => {
+test(`Check whether validation method for request is called`, () =>
+{
 	const validateSpy = jest.spyOn(request, 'validate');
 
 	memoryDb.getData(request);
@@ -20,13 +21,15 @@ test(`Check whether validation method for request is called`, () => {
 	expect(validateSpy).toHaveBeenCalled();
 });
 
-test('Is able to get data', async () => {
+test('Is able to get data', async () =>
+{
 	const result = await memoryDb.getData(request);
 
 	expect(result.length).toBe(memoryApiDb.users.length);
 });
 
-test(`Returned value isn't reference to object`, async () => {
+test(`Returned value isn't reference to object`, async () =>
+{
 	const result = await memoryDb.getData(request);
 
 	expect(result[0]).not.toBe(memoryApiDb.users[0]);
@@ -402,7 +405,8 @@ describe('Filtering data', () =>
 	});
 });
 
-describe('Limiting data', () => {
+describe('Limiting data', () =>
+{
 	test('Limiting data by amount works', async () =>
 	{
 		const testCases = [
@@ -541,5 +545,84 @@ describe('Sorting data', () =>
 		};
 
 		expect(memoryDb.getData(request)).rejects.toBeDefined();
+	});
+});
+
+describe('Data inserting', () =>
+{
+	test('Data inserting with Auto Increment works', async () => {
+		request.type = 'insert';
+		request.data = [
+			{
+				id: 555,
+				firstName: 'Jakub',
+				lastName: 'Poliszuk',
+				age: 23
+			}
+		];
+
+		try
+		{
+			const recordIds = await memoryDb.insertData(request);
+
+			expect(recordIds).toBeInstanceOf(Array);
+			expect(recordIds.length).toBe(1);
+			expect(recordIds[0]).not.toBe(555); // Because of AI
+
+			const userId = recordIds[0];
+
+			const users = await memoryDb.getData(new QueryRequest({
+				table: 'users',
+				conditions: {
+					firstName: 'Jakub',
+					lastName: 'Poliszuk'
+				}
+			}));
+
+			expect(users).toBeInstanceOf(Array);
+			expect(users.length).toBe(1);
+			expect(users[0].id).not.toBe(555);
+			expect(users[0].id).toBe(userId);
+			expect(users[0].age).toBe(23);
+		}
+		catch(e)
+		{
+			fail(e);
+		}
+	});
+
+	test('Data inserting without Auto Increment works', async () =>
+	{
+		request.type = 'insert';
+		request.table = 'cities';
+		request.data = [
+			{
+				id: 555,
+				name: 'JustAMockCity',
+			}
+		];
+
+		try
+		{
+			const recordIds = await memoryDb.insertData(request);
+
+			expect(recordIds).not.toBeInstanceOf(Array);
+			expect(recordIds).not.toBeDefined();
+
+			const cities = await memoryDb.getData(new QueryRequest({
+				table: 'cities',
+				conditions: {
+					name: 'JustAMockCity'
+				}
+			}));
+
+			expect(cities).toBeInstanceOf(Array);
+			expect(cities.length).toBe(1);
+			expect(cities[0].id).toBe(555);
+		}
+		catch(e)
+		{
+			fail(e);
+		}
 	});
 });

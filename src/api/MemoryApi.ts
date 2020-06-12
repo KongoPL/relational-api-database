@@ -7,31 +7,30 @@ export class MemoryApi extends DatabaseApi
 	private idColumns: {[key: string]: string} = {};
 	private tablesAutoIncrements: {[key: string]: number | false} = {};
 
-	constructor(data?: any, idColumn?: TIdColumns)
+	constructor(data?: TMemoryApiDatabase)
 	{
 		super();
 
 		if(typeof data === "object")
 			this.loadDatabase(data);
-
-		if(typeof idColumn !== 'undefined')
-			this.setIdColumn(idColumn);
 	}
 
 
-	public loadDatabase(data: object)
+	public loadDatabase(data: TMemoryApiDatabase)
 	{
 		const dataCopy = JSON.parse(JSON.stringify(data));
+		let meta = {};
 
 		if('_meta' in dataCopy)
 		{
-			this.loadMeta(dataCopy._meta);
+			meta = JSON.parse(JSON.stringify(dataCopy._meta));
 
 			delete dataCopy._meta;
 		}
 
 		this.data = dataCopy;
 
+		this.loadMeta(meta);
 		this.obtainAutoIncrementsForTables();
 	}
 
@@ -80,7 +79,7 @@ export class MemoryApi extends DatabaseApi
 			if(!idColumn)
 				continue;
 
-			const ids = this.data.map((row) => row[idColumn]);
+			const ids = this.data[tableName].map((row) => row[idColumn]);
 			const maxId = Math.max(...ids);
 
 			if(Number.isFinite(maxId))
@@ -315,6 +314,11 @@ export class MemoryApi extends DatabaseApi
 			return 0;
 		});
 	}
+}
+
+export type TMemoryApiDatabase = {
+	_meta?: TMetaData,
+	[key: string]: any[] | TMetaData | undefined
 }
 
 type TIdColumns = string | false | {[key: string]: string};
