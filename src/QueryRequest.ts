@@ -1,6 +1,6 @@
 export class QueryRequest
 {
-	public type: EQueryType | 'select' | 'update' | 'delete' | 'insert' = EQueryType.select;
+	public type: TQueryType = 'select';
 	// public fields: string[] = ['*'];
 	public table: string = '';
 	public conditions: TCondition = [];
@@ -8,9 +8,53 @@ export class QueryRequest
 	public order: TOrder = {};
 
 	public data: TData = [];
+	public values: TValues = {};
+
+	protected validationChecks: TValidationChecks = {
+		select: {
+			table: true,
+			conditions: 'optional',
+			limit: 'optional',
+			order: 'optional',
+			data: false,
+			values: false,
+		},
+		insert: {
+			table: true,
+			conditions: false,
+			limit: false,
+			order: false,
+			data: true,
+			values: false,
+		},
+		update: {
+			table: true,
+			conditions: 'optional',
+			limit: 'optional',
+			order: false,
+			data: false,
+			values: true,
+		},
+		delete: {
+			table: true,
+			conditions: 'optional',
+			limit: 'optional',
+			order: false,
+			data: false,
+			values: false,
+		},
+		any: {
+			table: true,
+			conditions: 'optional',
+			limit: 'optional',
+			order: 'optional',
+			data: 'optional',
+			values: 'optional',
+		}
+	};
 
 	constructor(params?: {
-		type?: EQueryType | 'select' | 'update' | 'delete' | 'insert',
+		type?: TQueryType,
 		table?: string,
 		conditions?: TCondition,
 		limit?: TLimit,
@@ -23,50 +67,76 @@ export class QueryRequest
 				this[key] = params[key];
 	}
 
-	public validate(): true | string
+	public validate(queryType?: TQueryType): true | string
 	{
-		if(typeof this.table != 'string')
-			return 'Table parameter is not string!';
+		// @ts-ignore type "any" exists, but it cant't see it, even when defined properly.
+		const checkedValues = queryType ? this.validationChecks[queryType] : this.validationChecks.any;
 
-		if(typeof this.conditions !== 'object')
-			return 'Conditions parameter is not an object!';
+		if(queryType && queryType != this.type)
+			return `Query type is incorrect! Expected "${queryType}", "${this.type}" given.`;
 
-		if(this.table === '')
-			return 'Table name is empty!';
-
-		if(this.hasConditions())
+		if(checkedValues.table)
 		{
-			const isValidCondition = this.checkCondition(this.conditions);
+			if(typeof this.table != 'string')
+				return 'Table parameter is not string!';
 
-			if(isValidCondition !== true)
-				return isValidCondition;
+			if(checkedValues.table === true && this.table === '')
+				return 'Table name is empty!';
 		}
 
-		if(this.hasLimit())
+		if(checkedValues.conditions)
 		{
-			const isValidLimit = this.checkLimit();
+			if(typeof this.conditions !== 'object')
+				return 'Conditions parameter is not an object!';
 
-			if(isValidLimit !== true)
-				return isValidLimit;
+			if(this.hasConditions())
+			{
+				const isValidCondition = this.checkCondition(this.conditions);
+
+				if(isValidCondition !== true)
+					return isValidCondition;
+			}
+			else if(checkedValues.conditions === true)
+				return 'Conditions parameter is required!';
 		}
 
-		if(this.hasOrder())
+		if(checkedValues.limit)
 		{
-			const isValidOrder = this.checkOrder();
+			if(this.hasLimit())
+			{
+				const isValidLimit = this.checkLimit();
 
-			if(isValidOrder !== true)
-				return isValidOrder;
+				if(isValidLimit !== true)
+					return isValidLimit;
+			}
+			else if(checkedValues.conditions === true)
+				return 'Limit parameter is required!';
 		}
 
-		if(this.hasData())
+		if(checkedValues.order)
 		{
-			const isValidData = this.checkData();
+			if(this.hasOrder())
+			{
+				const isValidOrder = this.checkOrder();
 
-			if(isValidData !== true)
-				return isValidData;
+				if(isValidOrder !== true)
+					return isValidOrder;
+			}
+			else if(checkedValues.order === true)
+				return 'Order parameter is required!';
 		}
-		else if(this.type === EQueryType.insert)
-			return 'Data is required for insert query!';
+
+		if(checkedValues.data)
+		{
+			if(this.hasData())
+			{
+				const isValidData = this.checkData();
+
+				if(isValidData !== true)
+					return isValidData;
+			} else if(checkedValues.data === true)
+				return 'Data parameter is required!';
+		}
 
 		return true;
 	}
@@ -236,14 +306,6 @@ export class QueryRequest
 	 }
 }
 
-export enum EQueryType
-{
-	select = 'select',
-	update = 'update',
-	delete = 'delete',
-	insert = 'insert',
-}
-
 export enum EOrderType
 {
 	asc = 'asc',
@@ -267,7 +329,19 @@ export type TCondition = [
 	...any[]
 ] | TConditionParameters;
 
+type TQueryType = 'select' | 'update' | 'delete' | 'insert';
 type TConditionParameters = {[key: string]: string | number | boolean | bigint} | {};
+type TValues = TConditionParameters;
+type TValidationChecks = {
+	[key in (TQueryType & 'any')]: {
+		table: boolean | 'optional',
+		conditions: boolean | 'optional',
+		limit: boolean | 'optional',
+		order: boolean | 'optional',
+		data: boolean | 'optional',
+		values: boolean | 'optional',
+	}
+};
 
 export type TLimit = [(number|string)?, (number|string)?];
 export type TOrder = {[key:string]: EOrderType | 'asc' | 'desc'};

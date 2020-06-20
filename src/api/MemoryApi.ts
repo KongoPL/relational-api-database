@@ -3,7 +3,7 @@ import {QueryRequest, EOrderType, TCondition, TLimit, TOrder} from "../QueryRequ
 
 export class MemoryApi extends DatabaseApi
 {
-	private data: any;
+	private data: TMemoryApiDatabaseInternal = {};
 	private idColumns: {[key: string]: string} = {};
 	private tablesAutoIncrements: {[key: string]: number | false} = {};
 
@@ -28,21 +28,24 @@ export class MemoryApi extends DatabaseApi
 			delete dataCopy._meta;
 		}
 
-		this.data = dataCopy;
-
+		this.loadData(dataCopy);
 		this.loadMeta(meta);
 		this.obtainAutoIncrementsForTables();
 	}
 
-
-	public getDatabase(): {_meta: TMetaData} & {[key: string]: any[]}
+	private loadData(data: any)
 	{
-		return {
-			_meta: {
-				idColumns: JSON.parse(JSON.stringify(this.idColumns))
-			},
-			...JSON.parse(JSON.stringify(this.data))
-		};
+		this.data = data;
+
+		for(let tableName in this.data)
+		{
+			for(let key in this.data[tableName])
+			{
+				this.data[tableName][key].__internal = {
+					id: `${tableName}.${key}`
+				};
+			}
+		}
 	}
 
 
@@ -50,6 +53,25 @@ export class MemoryApi extends DatabaseApi
 	{
 		if(typeof metaData.idColumns !== 'undefined')
 			this.setIdColumn(metaData.idColumns);
+	}
+
+
+	public getDatabase(): {_meta: TMetaData} & {[key: string]: any[]}
+	{
+		const dataCopy = JSON.parse(JSON.stringify(this.data));
+
+		for(let tableName in dataCopy)
+		{
+			for(let row of dataCopy[tableName])
+				delete row.__internal;
+		}
+
+		return {
+			_meta: {
+				idColumns: JSON.parse(JSON.stringify(this.idColumns))
+			},
+			...dataCopy
+		};
 	}
 
 
@@ -100,13 +122,20 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
-	async getData(query: QueryRequest): Promise<any[]>
+	async getData(query: QueryRequest): Promise<TOutRow[]>
 	{
-		const isQueryValid = query.validate();
+		let data = JSON.parse(JSON.stringify(this.getDataInternal(query)));
 
-		if(isQueryValid !== true)
-			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
+		return data.map((row: TInternalRow) => {
+			row._key = row.__internal.id;
+			delete row.__internal;
+			return row;
+		});
+	}
 
+
+	protected async getDataInternal(query: QueryRequest): Promise<TRow[]>
+	{
 		let data = this.getTable(query.table);
 
 		if(query.hasConditions())
@@ -118,18 +147,12 @@ export class MemoryApi extends DatabaseApi
 		if(query.hasLimit())
 			data = this.limitData(data, query.limit);
 
-
-		return JSON.parse(JSON.stringify(data));
+		return data;
 	}
 
 
 	async insertData(query: QueryRequest): Promise<(string | number)[] | any>
 	{
-		const isQueryValid = query.validate();
-
-		if(isQueryValid !== true)
-			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
-
 		const table = this.getTable(query.table),
 			data: any[] = JSON.parse(JSON.stringify(query.data));
 		let returnedData;
@@ -171,7 +194,25 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
-	private getTable(tableName: string)
+	public async updateData(query: QueryRequest): Promise<any>
+	{
+		const data = await this.getDataInternal(query),
+			values = JSON.parse(JSON.stringify(query.values));
+
+		for(let row of data)
+		{
+			for(let key in values)
+			{
+				if(key in row === false)
+					throw new Error(`Field "${key}" does not exists in record!`);
+
+				row[key] = values[key];
+			}
+		}
+	}
+
+
+	private getTable(tableName: string): TInternalRow[]
 	{
 		if(this.hasTable(tableName))
 			return this.data[tableName];
@@ -318,8 +359,26 @@ export class MemoryApi extends DatabaseApi
 
 export type TMemoryApiDatabase = {
 	_meta?: TMetaData,
-	[key: string]: any[] | TMetaData | undefined
+	[key: string]: TRow[] | TMetaData | undefined
 }
+
+export type TMemoryApiDatabaseInternal = {
+	[key: string]: TInternalRow[]
+}
+
+type TRow = {
+	[key: string]: any,
+}
+
+type TInternalRow = TRow & {
+	__internal: {
+		id: string
+	}
+}
+
+export type TOutRow = TRow & {
+	_key: string | number
+};
 
 type TIdColumns = string | false | {[key: string]: string};
 export type TMetaData = {

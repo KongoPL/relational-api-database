@@ -42,6 +42,26 @@ function checkFiltering(shouldPass: boolean, operators: string[], valueCases: an
 	}
 }
 
+describe('Query request type checks', () => {
+	test('Request validate works when validation type is equal', () => {
+		const request = new QueryRequest({
+			type: 'select',
+			table: 'users'
+		});
+
+		expect(request.validate('select')).not.toBe('Query type is incorrect! Expected "select", "select" given.');
+	});
+
+	test('Request validate fails when validation type is different', () => {
+		const request = new QueryRequest({
+			type: 'select',
+			table: 'users'
+		});
+
+		expect(request.validate('update')).toBe('Query type is incorrect! Expected "update", "select" given.');
+	});
+});
+
 describe('Query request table name checks', () =>
 {
 	test('Request without table name fails', () => {

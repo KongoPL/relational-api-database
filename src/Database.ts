@@ -7,13 +7,33 @@ export class Database
 	constructor(private api: DatabaseApi, private cache?: DatabaseCache)
 	{}
 
-	getData(request: QueryRequest): Promise<any[]>
+	getData(query: QueryRequest): Promise<any[]>
 	{
-		return this.api.getData(request);
+		const isQueryValid = query.validate('select');
+
+		if(isQueryValid !== true)
+			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
+
+		return this.api.getData(query);
 	}
 
-	insertData(request: QueryRequest): Promise<(string | number)[] | any>
+	insertData(query: QueryRequest): Promise<(string | number)[] | any>
 	{
-		return this.api.insertData(request);
+		const isQueryValid = query.validate('insert');
+
+		if(isQueryValid !== true)
+			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
+
+		return this.api.insertData(query);
+	}
+
+	updateData(query: QueryRequest): Promise<any>
+	{
+		const isQueryValid = query.validate('update');
+
+		if(isQueryValid !== true)
+			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
+
+		return this.api.updateData(query);
 	}
 }
