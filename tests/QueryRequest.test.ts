@@ -42,26 +42,6 @@ function checkFiltering(shouldPass: boolean, operators: string[], valueCases: an
 	}
 }
 
-describe('Query request type checks', () => {
-	test('Request validate works when validation type is equal', () => {
-		const request = new QueryRequest({
-			type: 'select',
-			table: 'users'
-		});
-
-		expect(request.validate('select')).not.toBe('Query type is incorrect! Expected "select", "select" given.');
-	});
-
-	test('Request validate fails when validation type is different', () => {
-		const request = new QueryRequest({
-			type: 'select',
-			table: 'users'
-		});
-
-		expect(request.validate('update')).toBe('Query type is incorrect! Expected "update", "select" given.');
-	});
-});
-
 describe('Query request table name checks', () =>
 {
 	test('Request without table name fails', () => {
@@ -429,7 +409,6 @@ describe('Query request data inserting checks', () =>
 {
 	test('Inserting data works', () => {
 		const request = new QueryRequest({
-			type: 'insert',
 			table: 'any',
 			data: [
 				{
@@ -466,7 +445,6 @@ describe('Query request data inserting checks', () =>
 		// that will be provided by API and there is no need to specify them in the request.
 
 		const request = new QueryRequest({
-			type: 'insert',
 			table: 'any',
 			data: [
 				{
@@ -487,7 +465,6 @@ describe('Query request data inserting checks', () =>
 
 	test('Inserting data with wrong data types will fail', () => {
 		const request = new QueryRequest({
-			type: 'insert',
 			table: 'any',
 			data: [
 				{
@@ -503,7 +480,6 @@ describe('Query request data inserting checks', () =>
 
 	test('Inserting data that is not an array of objects will fail', () => {
 		const request = new QueryRequest({
-			type: 'insert',
 			table: 'any',
 			data: [
 				// @ts-ignore
@@ -532,7 +508,6 @@ describe('Query request data updating checks', () =>
 	test('Updating with correct types of values works', () =>
 	{
 		const request = new QueryRequest({
-			type: 'update',
 			table: 'any',
 			values: {
 				name: 'Anna',
@@ -551,7 +526,6 @@ describe('Query request data updating checks', () =>
 			{}
 		],
 			request = new QueryRequest({
-			type: 'update',
 			table: 'any',
 		});
 

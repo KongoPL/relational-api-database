@@ -173,7 +173,15 @@ export class MemoryApi extends DatabaseApi
 			}
 		}
 
-		table.push(...data);
+		let lastInsertedKey: number = table.push(...data) - 1;
+
+		for(let i = data.length - 1; i >= 0; i--)
+		{
+			data[i].__internal = {
+				id: `${query.table}.${lastInsertedKey--}`
+			};
+		}
+
 
 		return returnedData;
 	}

@@ -1,6 +1,5 @@
 export class QueryRequest
 {
-	public type: TQueryType = 'select';
 	// public fields: string[] = ['*'];
 	public table: string = '';
 	public conditions: TCondition = [];
@@ -54,7 +53,6 @@ export class QueryRequest
 	};
 
 	constructor(params?: {
-		type?: TQueryType,
 		table?: string,
 		conditions?: TCondition,
 		limit?: TLimit,
@@ -72,9 +70,6 @@ export class QueryRequest
 	{
 		// @ts-ignore type "any" exists, but it cant't see it, even when defined properly.
 		const checkedValues = queryType ? this.validationChecks[queryType] : this.validationChecks.any;
-
-		if(queryType && queryType != this.type)
-			return `Query type is incorrect! Expected "${queryType}", "${this.type}" given.`;
 
 		if(checkedValues.table)
 		{

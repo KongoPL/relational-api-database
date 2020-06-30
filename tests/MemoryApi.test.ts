@@ -12,15 +12,6 @@ beforeEach(() => {
 	request.table = 'users';
 });
 
-test(`Check whether validation method for request is called`, () =>
-{
-	const validateSpy = jest.spyOn(request, 'validate');
-
-	memoryDb.getData(request);
-
-	expect(validateSpy).toHaveBeenCalled();
-});
-
 test('Is able to get data', async () =>
 {
 	const result = await memoryDb.getData(request);
@@ -551,7 +542,6 @@ describe('Sorting data', () =>
 describe('Data inserting', () =>
 {
 	test('Data inserting with Auto Increment works', async () => {
-		request.type = 'insert';
 		request.data = [
 			{
 				id: 555,
@@ -593,7 +583,6 @@ describe('Data inserting', () =>
 
 	test('Data inserting without Auto Increment works', async () =>
 	{
-		request.type = 'insert';
 		request.table = 'cities';
 		request.data = [
 			{
@@ -630,7 +619,6 @@ describe('Data inserting', () =>
 describe('Data updating', () =>
 {
 	test('Updating works', async () => {
-		request.type = 'update';
 		request.conditions = {
 			id: 1
 		};
@@ -648,7 +636,6 @@ describe('Data updating', () =>
 		const newAge = user.age + 1;
 
 		await memoryDb.updateData(new QueryRequest({
-			type: 'update',
 			table: 'users',
 			values: {
 				age: newAge
