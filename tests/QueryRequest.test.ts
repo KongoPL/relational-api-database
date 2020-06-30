@@ -526,3 +526,40 @@ describe('Query request data inserting checks', () =>
 		expect(request.validate()).not.toStrictEqual(true);
 	});
 });
+
+describe('Query request data updating checks', () =>
+{
+	test('Updating with correct types of values works', () =>
+	{
+		const request = new QueryRequest({
+			type: 'update',
+			table: 'any',
+			values: {
+				name: 'Anna',
+				age: 500,
+				exists: true
+			}
+		});
+
+		expect(request.validate()).toStrictEqual(true);
+	});
+
+	test('Updating with wrong types of values fails', () => {
+		const values = [
+			() => {},
+			[],
+			{}
+		],
+			request = new QueryRequest({
+			type: 'update',
+			table: 'any',
+		});
+
+		for(let value of values)
+		{
+			request.values = {field: value};
+
+			expect(request.validate()).not.toStrictEqual(true);
+		}
+	});
+});

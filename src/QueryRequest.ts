@@ -59,7 +59,8 @@ export class QueryRequest
 		conditions?: TCondition,
 		limit?: TLimit,
 		order?: TOrder,
-		data?: TData
+		data?: TData,
+		values?: TValues
 	})
 	{
 		for(let key in params)
@@ -136,6 +137,19 @@ export class QueryRequest
 					return isValidData;
 			} else if(checkedValues.data === true)
 				return 'Data parameter is required!';
+		}
+
+		if(checkedValues.values)
+		{
+			if(this.hasValues())
+			{
+				const isValidData = this.checkValues();
+
+				if(isValidData !== true)
+					return isValidData;
+			}
+			else if(checkedValues.values === true)
+				return 'Values parameter is required!';
 		}
 
 		return true;
@@ -216,21 +230,31 @@ export class QueryRequest
 		}
 		else
 		{
-			for(let field in condition)
-			{
-				const value = condition[field];
+			const validation = this.checkObjectOfValues(condition);
 
-				if(typeof value === 'object' && !Array.isArray(value))
-					return `Value can't be an object!`;
+			if(validation !== true)
+				return validation;
+		}
 
-				if(['undefined', 'symbol', 'function'].some((v) => v == typeof value))
-					return `Value can't be ${typeof value}!`;
+		return true;
+	}
 
-				if(Array.isArray(value))
-					for(let subvalue of value)
-						if(['undefined', 'symbol', 'function'].some((v) => v == typeof subvalue))
-							return `Subvalue can't be ${typeof value}!`;
-			}
+	protected checkObjectOfValues(object: any): true | string
+	{
+		for(let field in object)
+		{
+			const value = object[field];
+
+			if(typeof value === 'object' && !Array.isArray(value))
+				return `Value can't be an object!`;
+
+			if(['undefined', 'symbol', 'function'].some((v) => v == typeof value))
+				return `Value can't be ${typeof value}!`;
+
+			if(Array.isArray(value))
+				for(let subvalue of value)
+					   if(['undefined', 'symbol', 'function'].some((v) => v == typeof subvalue))
+						return `Subvalue can't be ${typeof value}!`;
 		}
 
 		return true;
@@ -304,6 +328,26 @@ export class QueryRequest
 
 		return true;
 	 }
+
+
+	 public hasValues(): boolean
+	 {
+	 	return (typeof this.values === "object" && Object.getOwnPropertyNames(this.values).length > 0);
+	 }
+
+
+	 public checkValues(): true | string
+	 {
+		 for(let field in this.values)
+		 {
+			 const value = this.values[field];
+
+			 if(['undefined', 'symbol', 'function', 'object'].some((v) => v == typeof value))
+				 return `Value can't be ${typeof value}!`
+		 }
+
+		 return true;
+	 }
 }
 
 export enum EOrderType
@@ -330,8 +374,8 @@ export type TCondition = [
 ] | TConditionParameters;
 
 type TQueryType = 'select' | 'update' | 'delete' | 'insert';
-type TConditionParameters = {[key: string]: string | number | boolean | bigint} | {};
-type TValues = TConditionParameters;
+type TConditionParameters = {[key: string]: string | number | boolean | bigint | string[] | number[] | boolean[] | bigint[]} | {};
+type TValues = {[key: string]: string | number | boolean | bigint} | {};
 type TValidationChecks = {
 	[key in (TQueryType & 'any')]: {
 		table: boolean | 'optional',

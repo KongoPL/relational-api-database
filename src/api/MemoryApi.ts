@@ -124,7 +124,7 @@ export class MemoryApi extends DatabaseApi
 
 	async getData(query: QueryRequest): Promise<TOutRow[]>
 	{
-		let data = JSON.parse(JSON.stringify(this.getDataInternal(query)));
+		let data = JSON.parse(JSON.stringify(await this.getDataInternal(query)));
 
 		return data.map((row: TInternalRow) => {
 			row._key = row.__internal.id;

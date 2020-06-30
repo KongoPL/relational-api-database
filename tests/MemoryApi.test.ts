@@ -626,3 +626,50 @@ describe('Data inserting', () =>
 		}
 	});
 });
+
+describe('Data updating', () =>
+{
+	test('Updating works', async () => {
+		request.type = 'update';
+		request.conditions = {
+			id: 1
+		};
+
+		const queryResult = await memoryDb.getData(request);
+
+		expect(queryResult).toBeInstanceOf(Array);
+		expect(queryResult.length).toEqual(1);
+
+		const user = queryResult[0];
+
+		expect(user.age).toBeDefined();
+		expect(typeof user.age).toBe('number');
+
+		const newAge = user.age + 1;
+
+		await memoryDb.updateData(new QueryRequest({
+			type: 'update',
+			table: 'users',
+			values: {
+				age: newAge
+			},
+			conditions: {
+				id: 1
+			}
+		}));
+
+		const newUser = await memoryDb.getData(request);
+
+		expect(newUser[0].age).toBe(newAge);
+	});
+
+	test('Updating non existing field will fail', () => {
+		request.values = {
+			notexistingfield: 15
+		};
+
+		memoryDb.updateData(request)
+			.then(() => fail('Updating promise should be rejected!'))
+			.catch(() => expect(true).toBe(true));
+	});
+});
