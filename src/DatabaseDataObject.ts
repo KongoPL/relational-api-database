@@ -3,11 +3,13 @@ import {QueryRequest, TCondition, TLimit, TOrder} from "./QueryRequest";
 
 export abstract class DatabaseDataObject<ModelClass>
 {
+	private obtainedRelations: string[] = [];
+
 	protected static db: Database;
 
+	public _key: string = '';
 	public onInit: Promise<any>;
-
-	private obtainedRelations: string[] = [];
+	public isNewRecord: boolean = true;
 
 	static injectDatabase(db: Database)
 	{
@@ -55,7 +57,7 @@ export abstract class DatabaseDataObject<ModelClass>
 
 	protected unwantedAttributes(): string[]
 	{
-		return ['db', 'onInit', 'obtainedRelations'];
+		return ['db', 'onInit', 'obtainedRelations', 'isNewRecord'];
 	}
 
 	getAttributes(): {[key: string]: any}
@@ -65,7 +67,7 @@ export abstract class DatabaseDataObject<ModelClass>
 			unwantedAttributes = this.unwantedAttributes();
 
 		for(let attribute in attributes)
-			 if(!unwantedAttributes.includes(attribute))
+			if(!unwantedAttributes.includes(attribute))
 				modelAttributes[attribute] = attributes[attribute].value;
 
 		return modelAttributes;
@@ -247,6 +249,7 @@ export abstract class DatabaseDataObject<ModelClass>
 				// @ts-ignore
 				const model = <ModelClass>(new this());
 
+				model.isNewRecord = false;
 				model.setAttributes(v);
 
 				return model;
@@ -256,6 +259,37 @@ export abstract class DatabaseDataObject<ModelClass>
 		await Promise.all(initPromises);
 
 		return models;
+	}
+
+	public update(): Promise<any>
+	{
+		return DatabaseDataObject.db.updateData(new QueryRequest({
+			// @ts-ignore
+			table: this.constructor.tableName(),
+			values: this.getAttributes(),
+			conditions: {
+				_key: this._key
+			}
+		}));
+	}
+
+	public insert()
+	{
+		return DatabaseDataObject.db.updateData(new QueryRequest({
+			// @ts-ignore
+			table: this.constructor.tableName(),
+			data: [
+				this.getAttributes()
+			],
+		}));
+	}
+
+	public save(): Promise<(string | number)[] | any>
+	{
+		if(this.isNewRecord)
+			return this.insert();
+		else
+			return this.update();
 	}
 
 	public toObject(): {[key: string]: any}
