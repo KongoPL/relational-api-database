@@ -286,16 +286,34 @@ export abstract class DatabaseDataObject<ModelClass>
 
 	public save(): Promise<(string | number)[] | any>
 	{
+		if(this.beforeSave(this.isNewRecord) === false)
+			return new Promise((res, rej) => rej());
+
+		let returnPromise;
+
 		if(this.isNewRecord)
-			return this.insert();
+			returnPromise = this.insert();
 		else
-			return this.update();
+			returnPromise = this.update();
+
+		this.afterSave(returnPromise);
+
+		return returnPromise;
 	}
 
 	public toObject(): {[key: string]: any}
 	{
 		return JSON.parse(JSON.stringify(this.getAttributes()));
 	}
+
+
+	protected beforeSave(isNewRecord: boolean): boolean
+	{
+		return true;
+	}
+
+
+	protected afterSave(promise: Promise<(string | number)[] | any>): void {}
 }
 
 export type TRelation = {[key: string]: IRelation};

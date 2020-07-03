@@ -181,6 +181,13 @@ describe('Relations', () => {
 	test.todo(`Updating related record separately, won't update it on model except, relation is refreshed`);
 });
 
+describe('Data saving', () => {
+	test.todo('Saving works');
+	test.todo('Inserts record if is new model');
+	test.todo(`Updates record if isn't a new model`);
+	test.todo(`Returning "false" by "beforeSave" rejects promise of saving`);
+});
+
 describe('Serialization', () =>
 {
 	test('Converting to objects works', () =>

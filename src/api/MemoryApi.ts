@@ -33,19 +33,55 @@ export class MemoryApi extends DatabaseApi
 		this.obtainAutoIncrementsForTables();
 	}
 
+
 	private loadData(data: any)
 	{
-		this.data = data;
+		if(typeof data === 'object' && Array.isArray(data))
+			throw new Error('Database have to be strict object!');
 
-		for(let tableName in this.data)
+		for(let tableName in data)
 		{
-			for(let key in this.data[tableName])
+			if(data[tableName] instanceof Array === false)
+				throw new Error('Value for table have to be an array!');
+
+			for(let key in data[tableName])
 			{
-				this.data[tableName][key].__internal = {
-					id: `${tableName}.${key}`
-				};
+				const row = data[tableName][key];
+
+				if(typeof row === 'object' && Array.isArray(row))
+					throw new Error('Row have to be strict object!');
+
+				if('_key' in row)
+					throw new Error('"_key" field is reserved for MemoryAPI!');
+
+				data[tableName][key] = this.prepareRecord(tableName, row);
 			}
 		}
+
+		this.data = data;
+	}
+
+
+	private prepareRecord(tableName: string, row: TRow): TRow
+	{
+		row._key = `${tableName}.${this.generateRandomHash(12)}`;
+
+		return row;
+	}
+
+
+	private generateRandomHash(length: number, chars = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890'): string
+	{
+		let hash = '';
+
+		for(let i = 0; i < length; i++)
+		{
+			const key = Math.round(Math.random() * (chars.length - 1));
+
+			hash += chars[key];
+		}
+
+		return hash;
 	}
 
 
@@ -63,7 +99,7 @@ export class MemoryApi extends DatabaseApi
 		for(let tableName in dataCopy)
 		{
 			for(let row of dataCopy[tableName])
-				delete row.__internal;
+				delete row._key;
 		}
 
 		return {
@@ -113,6 +149,7 @@ export class MemoryApi extends DatabaseApi
 		}
 	}
 
+
 	private getTableIdColumn(tableName: string): string | false
 	{
 		if(tableName in this.idColumns)
@@ -122,15 +159,9 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
-	async getData(query: QueryRequest): Promise<TOutRow[]>
+	async getData(query: QueryRequest): Promise<TRow[]>
 	{
-		let data = JSON.parse(JSON.stringify(await this.getDataInternal(query)));
-
-		return data.map((row: TInternalRow) => {
-			row._key = row.__internal.id;
-			delete row.__internal;
-			return row;
-		});
+		return JSON.parse(JSON.stringify(await this.getDataInternal(query)));
 	}
 
 
@@ -153,37 +184,29 @@ export class MemoryApi extends DatabaseApi
 
 	async insertData(query: QueryRequest): Promise<(string | number)[] | any>
 	{
-		const table = this.getTable(query.table),
-			data: any[] = JSON.parse(JSON.stringify(query.data));
-		let returnedData;
+		const table = this.getTable(query.table);
+		let data: any[] = JSON.parse(JSON.stringify(query.data));
+		let returnedData = this.assignAutoIncrementValuesForRecords(query.table, data);
 
-		// Auto increment assignment:
-		const idColumn = this.getTableIdColumn(query.table);
-
-		if(idColumn)
-		{
-			const autoIncrements = this.getAutoIncrementForTable(query.table, data.length);
-
-			if(autoIncrements)
-			{
-				for(let i = 0; i < data.length; i++)
-					data[i][idColumn] = autoIncrements[i];
-
-				returnedData = autoIncrements;
-			}
-		}
-
-		let lastInsertedKey: number = table.push(...data) - 1;
-
-		for(let i = data.length - 1; i >= 0; i--)
-		{
-			data[i].__internal = {
-				id: `${query.table}.${lastInsertedKey--}`
-			};
-		}
-
+		data = data.map(this.prepareRecord.bind(this, query.table));
+		table.push(...data);
 
 		return returnedData;
+	}
+
+
+	private assignAutoIncrementValuesForRecords(tableName: string, data: any[]): number[] | any
+	{
+		const idColumn = this.getTableIdColumn(tableName),
+			autoIncrements = this.getAutoIncrementForTable(tableName, data.length);
+
+		if(!idColumn || !autoIncrements)
+			return;
+
+		for(let i = 0; i < data.length; i++)
+			data[i][idColumn] = autoIncrements[i];
+
+		return autoIncrements;
 	}
 
 
@@ -220,7 +243,7 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
-	private getTable(tableName: string): TInternalRow[]
+	private getTable(tableName: string): TRow[]
 	{
 		if(this.hasTable(tableName))
 			return this.data[tableName];
@@ -367,26 +390,19 @@ export class MemoryApi extends DatabaseApi
 
 export type TMemoryApiDatabase = {
 	_meta?: TMetaData,
-	[key: string]: TRow[] | TMetaData | undefined
+	[key: string]: {
+		[key: string]: any,
+	} | TMetaData | undefined
 }
 
 export type TMemoryApiDatabaseInternal = {
-	[key: string]: TInternalRow[]
+	[key: string]: TRow[]
 }
 
 type TRow = {
+	_key: string | number,
 	[key: string]: any,
 }
-
-type TInternalRow = TRow & {
-	__internal: {
-		id: string
-	}
-}
-
-export type TOutRow = TRow & {
-	_key: string | number
-};
 
 type TIdColumns = string | false | {[key: string]: string};
 export type TMetaData = {

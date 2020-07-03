@@ -12,18 +12,60 @@ beforeEach(() => {
 	request.table = 'users';
 });
 
-test('Is able to get data', async () =>
-{
-	const result = await memoryDb.getData(request);
+describe('Database data loading tests', () => {
+	test('Database loading works', () => {
+		memoryDb.loadDatabase({
+			test: [
+				{
+					works: true
+				}
+			]
+		});
 
-	expect(result.length).toBe(memoryApiDb.users.length);
+		const db = memoryDb.getDatabase();
+
+		expect(db.test[0].works).toBe(true);
+	});
+
+	test('Loading database in incorrect format fails', () => {
+		// @ts-ignore
+		expect(() => memoryDb.loadDatabase([])).toThrow();
+
+		expect(() => memoryDb.loadDatabase({
+			test: {}
+		})).toThrow();
+
+		expect(() => memoryDb.loadDatabase({
+			test: [
+				[]
+			]
+		})).toThrow();
+
+		expect(() => memoryDb.loadDatabase({
+			test: [
+				{
+					_key: "I shouldn't have done that",
+					id: 15
+				}
+			]
+		})).toThrow();
+	});
 });
 
-test(`Returned value isn't reference to object`, async () =>
-{
-	const result = await memoryDb.getData(request);
+describe('Basic data selecting', () => {
+	test('Is able to get data', async () =>
+	{
+		const result = await memoryDb.getData(request);
 
-	expect(result[0]).not.toBe(memoryApiDb.users[0]);
+		expect(result.length).toBe(memoryApiDb.users.length);
+	});
+
+	test(`Returned value isn't reference to object`, async () =>
+	{
+		const result = await memoryDb.getData(request);
+
+		expect(result[0]).not.toBe(memoryApiDb.users[0]);
+	});
 });
 
 describe('Filtering data', () =>
@@ -393,6 +435,33 @@ describe('Filtering data', () =>
 				expect(memoryDb.getData(request)).rejects.toBeDefined();
 			}
 		});
+	});
+
+	test('Filtering by "_key" attribute works', async () => {
+		request.conditions = {
+			firstName: 'Jane',
+			lastName: 'Doe',
+			age: 18
+		};
+
+		const result = await memoryDb.getData(request);
+
+		expect(result).toBeInstanceOf(Array);
+		expect(result.length).toEqual(1);
+
+		request.conditions = {
+			_key: result[0]._key
+		};
+
+		const result2 = await memoryDb.getData(request);
+
+		expect(result2).toBeInstanceOf(Array);
+		expect(result2.length).toEqual(1);
+
+		expect(result[0]._key).toBe(result2[0]._key);
+		expect(result[0].firstName).toBe(result2[0].firstName);
+		expect(result[0].lastName).toBe(result2[0].lastName);
+		expect(result[0].age).toBe(result2[0].age);
 	});
 });
 
