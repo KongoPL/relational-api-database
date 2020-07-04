@@ -5,6 +5,7 @@ import {memoryApiDb} from "./mock-databases/MemoryApiDb";
 import {City} from "./data-types/City";
 import {QueryRequest} from "../src/QueryRequest";
 import {DatabaseDataObject} from "../src/DatabaseDataObject";
+import {Currency} from "./data-types/Currency";
 
 let db: Database;
 
@@ -176,16 +177,64 @@ describe('Relations', () => {
 			.catch(fail);
 	});
 
-	test.todo('Fetching relations with eager loading works');
+	test('Fetching relations with eager loading works', async () => {
+		const user = await User.findById(1);
+
+		expect(user.currencies.length).toBe(1);
+		user.currencies.forEach((v) => expect(v).toBeInstanceOf(Currency));
+	});
+
 	test.todo(`Reobtaining relation won't request for data except it has been asked to refresh`);
 	test.todo(`Updating related record separately, won't update it on model except, relation is refreshed`);
 });
 
 describe('Data saving', () => {
-	test.todo('Saving works');
-	test.todo('Inserts record if is new model');
-	test.todo(`Updates record if isn't a new model`);
-	test.todo(`Returning "false" by "beforeSave" rejects promise of saving`);
+	test('Saving works', async () => {
+		const user = await User.findById(1);
+
+		user.lastName = 'Testing!!!';
+		await user.save();
+
+		const userDb = await db.getData(new QueryRequest({
+			table: 'users',
+			conditions: {
+				id: 1
+			}
+		}));
+
+		expect(userDb).toBeInstanceOf(Array);
+		expect(userDb.length).toBe(1);
+		expect(userDb[0].lastName).toBe(user.lastName);
+	});
+
+	test('Inserts record if is new model', async () => {
+		const user = new User();
+		const insertSpy = jest.spyOn(user, 'insert');
+
+		user.isNewRecord = true;
+		await user.save();
+
+		expect(insertSpy).toHaveBeenCalled();
+	});
+
+	test(`Updates record if isn't a new model`, async () => {
+		const user = new User();
+		const  updateSpy = jest.spyOn(user, 'update');
+
+		user.isNewRecord = false;
+		await user.save();
+
+		expect(updateSpy).toHaveBeenCalled();
+	});
+
+	test(`Returning "false" by "beforeSave" rejects promise of saving`, () => {
+		const user = new User();
+
+		user.beforeSaveReturnValue = false;
+
+		user.save().then(fail)
+			.catch((reason) => expect(reason).not.toBeDefined());
+	});
 });
 
 describe('Serialization', () =>

@@ -75,5 +75,12 @@ export const memoryApiDb = {
 			userId: 3,
 			cityId: 1,
 		}
+	],
+	currencies: [
+		{
+			userId: 1,
+			name: 'PLN',
+			value: 0.15
+		}
 	]
 };

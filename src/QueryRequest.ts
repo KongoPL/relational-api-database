@@ -240,7 +240,7 @@ export class QueryRequest
 		{
 			const value = object[field];
 
-			if(typeof value === 'object' && !Array.isArray(value))
+			if(typeof value === 'object' && !Array.isArray(value) && value !== null)
 				return `Value can't be an object!`;
 
 			if(['undefined', 'symbol', 'function'].some((v) => v == typeof value))
@@ -311,7 +311,7 @@ export class QueryRequest
 	 {
 		for(let row of this.data)
 		{
-			if(typeof row !== "object" || Array.isArray(row))
+			if(typeof row !== "object" || Array.isArray(row) || row === null)
 				return 'Row can be only strict object!';
 
 			for(let key in row)
@@ -337,7 +337,7 @@ export class QueryRequest
 		 {
 			 const value = this.values[field];
 
-			 if(['undefined', 'symbol', 'function', 'object'].some((v) => v == typeof value))
+			 if(['undefined', 'symbol', 'function'].some((v) => v == typeof value) || typeof value === 'object' && !Array.isArray(value) && value !== null)
 				 return `Value can't be ${typeof value}!`
 		 }
 

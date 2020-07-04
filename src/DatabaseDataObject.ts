@@ -8,7 +8,6 @@ export abstract class DatabaseDataObject<ModelClass>
 	protected static db: Database;
 
 	public _key: string = '';
-	public onInit: Promise<any>;
 	public isNewRecord: boolean = true;
 
 	static injectDatabase(db: Database)
@@ -21,17 +20,10 @@ export abstract class DatabaseDataObject<ModelClass>
 		throw new Error('Table name is not given!');
 	}
 
-	constructor()
+	public async init(isNewRecord: boolean)
 	{
-		this.onInit = new Promise(async (resolve) => {
-			await this.init();
+		this.isNewRecord = isNewRecord;
 
-			resolve();
-		});
-	}
-
-	protected async init()
-	{
 		await this.fetchEagerRelations();
 	}
 
@@ -57,7 +49,11 @@ export abstract class DatabaseDataObject<ModelClass>
 
 	protected unwantedAttributes(): string[]
 	{
-		return ['db', 'onInit', 'obtainedRelations', 'isNewRecord'];
+		return [
+			'db',
+			'obtainedRelations',
+			'isNewRecord'
+		];
 	}
 
 	getAttributes(): {[key: string]: any}
@@ -67,7 +63,8 @@ export abstract class DatabaseDataObject<ModelClass>
 			unwantedAttributes = this.unwantedAttributes();
 
 		for(let attribute in attributes)
-			if(!unwantedAttributes.includes(attribute))
+			if(!unwantedAttributes.includes(attribute) // Unwanted attributes check
+				&& typeof attributes[attribute].value !== 'function') // Jest Mocking check
 				modelAttributes[attribute] = attributes[attribute].value;
 
 		return modelAttributes;
@@ -245,16 +242,15 @@ export abstract class DatabaseDataObject<ModelClass>
 		});
 
 		const models = (await DatabaseDataObject.db.getData(request))
-			.map(v => {
+			.map((v) => {
 				// @ts-ignore
 				const model = <ModelClass>(new this());
 
-				model.isNewRecord = false;
 				model.setAttributes(v);
 
 				return model;
 			});
-		const initPromises = models.map(v => v.onInit);
+		const initPromises = models.map(v => v.init(false));
 
 		await Promise.all(initPromises);
 
@@ -275,7 +271,7 @@ export abstract class DatabaseDataObject<ModelClass>
 
 	public insert()
 	{
-		return DatabaseDataObject.db.updateData(new QueryRequest({
+		return DatabaseDataObject.db.insertData(new QueryRequest({
 			// @ts-ignore
 			table: this.constructor.tableName(),
 			data: [
