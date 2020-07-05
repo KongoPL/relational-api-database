@@ -10,37 +10,43 @@ export const memoryApiDb = {
 			firstName: 'John',
 			lastName: 'Doe',
 			age: 23,
-			cityId: 1
+			cityId: 1,
+			tags: []
 		}, {
 			id: 2,
 			firstName: 'Jane',
 			lastName: 'Doe',
 			age: 18,
-			cityId: 1
+			cityId: 1,
+			tags: []
 		}, {
 			id: 3,
 			firstName: 'Patric',
 			lastName: 'Smith',
 			age: 23,
-			cityId: null
+			cityId: null,
+			tags: []
 		}, {
 			id: 4,
 			firstName: 'Susan',
 			lastName: 'Black',
 			age: 25,
-			cityId: 2
+			cityId: 2,
+			tags: []
 		}, {
 			id: 5,
 			firstName: 'Peter',
 			lastName: 'Hanks',
 			age: 30,
-			cityId: 2
+			cityId: 2,
+			tags: []
 		}, {
 			id: 6,
 			firstName: 'Brian',
 			lastName: 'o Neil',
 			age: 15,
-			cityId: 3
+			cityId: 3,
+			tags: []
 		},
 	],
 	cities: [

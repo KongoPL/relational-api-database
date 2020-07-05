@@ -512,7 +512,9 @@ describe('Query request data updating checks', () =>
 			values: {
 				name: 'Anna',
 				age: 500,
-				exists: true
+				exists: true,
+				arrayData: [],
+				objectData: {}
 			}
 		});
 
@@ -521,9 +523,7 @@ describe('Query request data updating checks', () =>
 
 	test('Updating with wrong types of values fails', () => {
 		const values = [
-			() => {},
-			[],
-			{}
+			() => {}
 		],
 			request = new QueryRequest({
 			table: 'any',

@@ -24,4 +24,12 @@ export class City extends MyDatabaseDataObject<City>
 			}
 		};
 	}
+
+	protected unwantedAttributes(): string[]
+	{
+		return [
+			...super.unwantedAttributes(),
+			'users'
+		];
+	}
 }

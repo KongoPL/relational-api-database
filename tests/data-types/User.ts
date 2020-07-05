@@ -10,6 +10,7 @@ export class User extends MyDatabaseDataObject<User>
 	public lastName : string = '';
 	public age: number = 0;
 	public cityId: number | null = null;
+	public tags: string[] = [];
 
 	public city: City | null = null;
 	public visitedCities: City[] = [];

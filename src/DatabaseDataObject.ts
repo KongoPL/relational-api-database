@@ -56,14 +56,14 @@ export abstract class DatabaseDataObject<ModelClass>
 		];
 	}
 
-	getAttributes(): {[key: string]: any}
+	getAttributes(includeUnwanted: boolean = false): {[key: string]: any}
 	{
 		const attributes = Object.getOwnPropertyDescriptors(this),
 			modelAttributes = {},
 			unwantedAttributes = this.unwantedAttributes();
 
 		for(let attribute in attributes)
-			if(!unwantedAttributes.includes(attribute) // Unwanted attributes check
+			if((includeUnwanted || !includeUnwanted && !unwantedAttributes.includes(attribute)) // Unwanted attributes check
 				&& typeof attributes[attribute].value !== 'function') // Jest Mocking check
 				modelAttributes[attribute] = attributes[attribute].value;
 
@@ -179,18 +179,18 @@ export abstract class DatabaseDataObject<ModelClass>
 				break;
 		}
 
-		if(!this.obtainedRelations.includes(name))
-			this.obtainedRelations.push(name);
-
 		if(this.hasRelation(name, false))
 			this[name] = data;
+
+		if(!this.obtainedRelations.includes(name))
+			this.obtainedRelations.push(name);
 
 		return data;
 	}
 
 	public hasRelation(name: string, obtained: boolean = true)
 	{
-		return this.hasOwnProperty(name) && this.obtainedRelations.includes(name);
+		return this.hasOwnProperty(name) && (obtained && this.obtainedRelations.includes(name) || !obtained);
 	}
 
 
@@ -299,7 +299,7 @@ export abstract class DatabaseDataObject<ModelClass>
 
 	public toObject(): {[key: string]: any}
 	{
-		return JSON.parse(JSON.stringify(this.getAttributes()));
+		return JSON.parse(JSON.stringify(this.getAttributes(true)));
 	}
 
 

@@ -337,7 +337,7 @@ export class QueryRequest
 		 {
 			 const value = this.values[field];
 
-			 if(['undefined', 'symbol', 'function'].some((v) => v == typeof value) || typeof value === 'object' && !Array.isArray(value) && value !== null)
+			 if(['undefined', 'symbol', 'function'].some((v) => v == typeof value))
 				 return `Value can't be ${typeof value}!`
 		 }
 

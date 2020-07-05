@@ -76,7 +76,18 @@ describe('Attributes management', () => {
 		}).toThrowError();
 	});
 
-	test.todo('Checking attributes existence works');
+	test('Checking attributes existence works', () => {
+		const user = new User();
+
+		expect(user.hasAttribute('id')).toBeTruthy();
+		expect(user.hasAttribute('cityId')).toBeTruthy();
+
+		expect(user.city).toBeDefined();
+		expect(user.hasAttribute('city')).toBeFalsy();
+
+		expect(user.isNewRecord).toBeDefined();
+		expect(user.hasAttribute('isNewRecord')).toBeFalsy();
+	});
 });
 
 describe('Finding data', () =>
@@ -184,8 +195,42 @@ describe('Relations', () => {
 		user.currencies.forEach((v) => expect(v).toBeInstanceOf(Currency));
 	});
 
-	test.todo(`Reobtaining relation won't request for data except it has been asked to refresh`);
-	test.todo(`Updating related record separately, won't update it on model except, relation is refreshed`);
+	test(`Reobtaining relation won't request for data except it has been asked to refresh`, async () => {
+		const user = await User.findById(1);
+
+		await user.getRelation('city');
+
+		expect(user.city).not.toBeNull();
+
+		user.city.name = 'Whatever';
+
+		await user.getRelation('city');
+
+		expect(user.city.name).toBe('Whatever');
+
+		await user.getRelation('city', true);
+
+		expect(user.city.name).not.toBe('Whatever');
+	});
+
+	test(`Updating related record separately, won't update it on model except, relation is refreshed`, async () => {
+		const user = await User.findById(1);
+
+		await user.getRelation('city');
+
+		expect(user.city).not.toBeNull();
+
+		const city = await City.findById(user.city.id);
+
+		city.name = 'Whatever';
+		await city.update();
+
+		expect(user.city.name).not.toBe('Whatever');
+
+		await user.getRelation('city', true);
+
+		expect(user.city.name).toBe('Whatever');
+	});
 });
 
 describe('Data saving', () => {
@@ -253,8 +298,8 @@ describe('Serialization', () =>
 			id: 1,
 			firstName: 'Susan',
 			tags: tags,
-			city: city
 		});
+		user.city = city;
 
 		const serialized = user.toObject();
 
