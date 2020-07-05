@@ -257,6 +257,7 @@ export abstract class DatabaseDataObject<ModelClass>
 		return models;
 	}
 
+
 	public update(): Promise<any>
 	{
 		return DatabaseDataObject.db.updateData(new QueryRequest({
@@ -269,6 +270,7 @@ export abstract class DatabaseDataObject<ModelClass>
 		}));
 	}
 
+
 	public insert()
 	{
 		return DatabaseDataObject.db.insertData(new QueryRequest({
@@ -279,6 +281,7 @@ export abstract class DatabaseDataObject<ModelClass>
 			],
 		}));
 	}
+
 
 	public save(): Promise<(string | number)[] | any>
 	{
@@ -296,6 +299,20 @@ export abstract class DatabaseDataObject<ModelClass>
 
 		return returnPromise;
 	}
+
+
+	public delete(): Promise<any>
+	{
+		return DatabaseDataObject.db.deleteData(new QueryRequest({
+			// @ts-ignore
+			table: this.constructor.tableName(),
+			conditions: {
+				_key: this._key,
+			},
+			limit: [1]
+		}));
+	}
+
 
 	public toObject(): {[key: string]: any}
 	{

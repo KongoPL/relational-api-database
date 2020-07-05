@@ -243,6 +243,15 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
+	public async deleteData(query: QueryRequest): Promise<any>
+	{
+		const data = await this.getDataInternal(query);
+		const recordsKey = data.map((v) => v._key);
+
+		this.data[query.table] = this.data[query.table].filter((r) => recordsKey.indexOf(r._key) === -1);
+	}
+
+
 	private getTable(tableName: string): TRow[]
 	{
 		if(this.hasTable(tableName))

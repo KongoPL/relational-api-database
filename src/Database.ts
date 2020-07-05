@@ -36,4 +36,14 @@ export class Database
 
 		return this.api.updateData(query);
 	}
+
+	deleteData(query: QueryRequest): Promise<any>
+	{
+		const isQueryValid = query.validate('delete');
+
+		if(isQueryValid !== true)
+			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
+
+		return this.api.deleteData(query);
+	}
 }

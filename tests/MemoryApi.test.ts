@@ -729,3 +729,23 @@ describe('Data updating', () =>
 			.catch(() => expect(true).toBe(true));
 	});
 });
+
+describe('Data deleting', () => {
+	test('Data deleting works', async () => {
+		request.conditions = {
+			id: 1
+		};
+
+		const data = await memoryDb.getData(request);
+
+		expect(data).toBeInstanceOf(Array);
+		expect(data.length).toBe(1);
+
+		await memoryDb.deleteData(request);
+
+		const data2 = await memoryDb.getData(request);
+
+		expect(data2).toBeInstanceOf(Array);
+		expect(data2.length).toBe(0);
+	});
+});

@@ -233,7 +233,7 @@ describe('Relations', () => {
 	});
 });
 
-describe('Data saving', () => {
+describe('Data manipulation', () => {
 	test('Saving works', async () => {
 		const user = await User.findById(1);
 
@@ -279,6 +279,16 @@ describe('Data saving', () => {
 
 		user.save().then(fail)
 			.catch((reason) => expect(reason).not.toBeDefined());
+	});
+
+	test(`Record deleting works`, async () => {
+		const user = await User.findById(1);
+
+		await user.delete();
+
+		const user2 = await User.findById(1);
+
+		expect(user2).toBeNull();
 	});
 });
 
