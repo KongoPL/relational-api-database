@@ -9,6 +9,8 @@ export class QueryRequest
 	public data: TData = [];
 	public values: TValues = {};
 
+	public cache: boolean = true;
+
 	protected validationChecks: TValidationChecks = {
 		select: {
 			table: true,
@@ -17,6 +19,7 @@ export class QueryRequest
 			order: 'optional',
 			data: false,
 			values: false,
+			cache: true,
 		},
 		insert: {
 			table: true,
@@ -25,6 +28,7 @@ export class QueryRequest
 			order: false,
 			data: true,
 			values: false,
+			cache: true,
 		},
 		update: {
 			table: true,
@@ -33,6 +37,7 @@ export class QueryRequest
 			order: false,
 			data: false,
 			values: true,
+			cache: true,
 		},
 		delete: {
 			table: true,
@@ -41,6 +46,7 @@ export class QueryRequest
 			order: false,
 			data: false,
 			values: false,
+			cache: true,
 		},
 		any: {
 			table: true,
@@ -49,6 +55,7 @@ export class QueryRequest
 			order: 'optional',
 			data: 'optional',
 			values: 'optional',
+			cache: true,
 		}
 	};
 
@@ -145,6 +152,19 @@ export class QueryRequest
 			}
 			else if(checkedValues.values === true)
 				return 'Values parameter is required!';
+		}
+
+		if(checkedValues.cache)
+		{
+			if(this.hasCache())
+			{
+				const isValidData = this.checkCache();
+
+				if(isValidData !== true)
+					return isValidData;
+			}
+			else if(checkedValues.values === true)
+				return 'Cache parameter is required!';
 		}
 
 		return true;
@@ -342,7 +362,39 @@ export class QueryRequest
 		 }
 
 		 return true;
-	 }
+	}
+
+
+	public hasCache(): boolean
+	{
+		return typeof this.cache !== 'undefined';
+	}
+
+	public checkCache(): true | string
+	{
+		if(typeof this.cache === 'boolean')
+			return true;
+		else
+			return 'Cache needs to be boolean!';
+	}
+
+
+	toObject(): {[key: string]: any}
+	{
+		const attributes = Object.getOwnPropertyNames(this);
+		const returnObject = {};
+
+		for(let attribute of attributes)
+			returnObject[attribute] = this[attribute];
+
+		return returnObject;
+	}
+
+
+	toString(): string
+	{
+		return JSON.stringify(this.toObject());
+	}
 }
 
 export enum EOrderType
@@ -379,6 +431,7 @@ type TValidationChecks = {
 		order: boolean | 'optional',
 		data: boolean | 'optional',
 		values: boolean | 'optional',
+		cache: boolean | 'optional',
 	}
 };
 

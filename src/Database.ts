@@ -4,46 +4,89 @@ import {QueryRequest} from "./QueryRequest";
 
 export class Database
 {
-	constructor(private api: DatabaseApi, private cache?: DatabaseCache)
-	{}
+	public enableCache: boolean;
 
-	getData(query: QueryRequest): Promise<any[]>
+	constructor(public api: DatabaseApi, private _cache?: DatabaseCache)
 	{
-		const isQueryValid = query.validate('select');
+		this.enableCache = (typeof this._cache !== 'undefined');
+	}
 
-		if(isQueryValid !== true)
-			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
+	set cache(cache: DatabaseCache | false)
+	{
+		this.enableCache = !!cache;
 
-		return this.api.getData(query);
+		if(this.enableCache)
+			this.cache = cache;
+		else
+			delete this.cache;
+	}
+
+	get cache(): DatabaseCache | false
+	{
+		return this._cache ? this._cache : false;
+	}
+
+	async getData(query: QueryRequest): Promise<any[]>
+	{
+		this.validateQuery('select', query);
+
+		if(this._cache)
+		{
+			if(this._cache.hasCachedDatabase())
+				return await this._cache.getData(query);
+			else if(query.cache && this._cache.hasCachedQuery('select', query))
+				return this._cache.getQueryOutput('select', query);
+		}
+
+		const response = await this.api.getData(query);
+
+		if(this._cache && query.cache)
+			this._cache.cacheQuery('select', query, response);
+
+		return response;
 	}
 
 	insertData(query: QueryRequest): Promise<(string | number)[] | any>
 	{
-		const isQueryValid = query.validate('insert');
+		this.validateQuery('insert', query);
 
-		if(isQueryValid !== true)
-			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
+		return this.api.insertData(query).then(async (response) => {
+			if(this._cache)
+			{
+				const cacheRequest = new QueryRequest(query.toObject());
 
-		return this.api.insertData(query);
+				for(let i in cacheRequest.data)
+					for(let key in response[i])
+						cacheRequest.data[i][key] = response[i][key];
+
+				await this._cache.insertData(cacheRequest);
+			}
+		});
 	}
 
 	updateData(query: QueryRequest): Promise<any>
 	{
-		const isQueryValid = query.validate('update');
-
-		if(isQueryValid !== true)
-			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
-
-		return this.api.updateData(query);
+		return this.validateQuery('update', query) && this.api.updateData(query).then(async () => {
+			if(this._cache)
+				await this._cache.updateData(query);
+		});
 	}
 
 	deleteData(query: QueryRequest): Promise<any>
 	{
-		const isQueryValid = query.validate('delete');
+		return this.validateQuery('delete', query) && this.api.deleteData(query).then(async () => {
+			if(this._cache)
+				await this._cache.deleteData(query);
+		});
+	}
+
+	private validateQuery(type: 'select' | 'update' | 'delete' | 'insert', query: QueryRequest): true
+	{
+		const isQueryValid = query.validate(type);
 
 		if(isQueryValid !== true)
 			throw new Error(`Query is not valid! Reason: ${isQueryValid}`);
 
-		return this.api.deleteData(query);
+		return true;
 	}
 }

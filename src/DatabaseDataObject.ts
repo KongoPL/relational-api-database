@@ -279,7 +279,15 @@ export abstract class DatabaseDataObject<ModelClass>
 			data: [
 				this.getAttributes()
 			],
-		}));
+		})).then((response) => {
+			if(response.length > 0)
+			{
+				const object = response[0];
+
+				for(let key in object)
+					this[key] = object[key];
+			}
+		});
 	}
 
 

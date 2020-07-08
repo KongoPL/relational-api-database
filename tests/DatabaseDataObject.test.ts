@@ -262,6 +262,19 @@ describe('Data manipulation', () => {
 		expect(insertSpy).toHaveBeenCalled();
 	});
 
+	test('After record has been inserted, "_key" and "id" property is known', async () => {
+		const user = new User();
+
+		user.firstName = 'Tes';
+		user.lastName = 'ting';
+		await user.insert();
+
+		expect(user.id).not.toBeNull();
+		expect(user.id).not.toBe(0);
+		expect(user._key).not.toBe('');
+		expect(user._key.length).toBeGreaterThan(0);
+	});
+
 	test(`Updates record if isn't a new model`, async () => {
 		const user = new User();
 		const  updateSpy = jest.spyOn(user, 'update');

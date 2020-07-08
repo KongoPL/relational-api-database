@@ -64,7 +64,8 @@ export class MemoryApi extends DatabaseApi
 
 	private prepareRecord(tableName: string, row: TRow): TRow
 	{
-		row._key = `${tableName}.${this.generateRandomHash(12)}`;
+		if(!('_key' in row))
+			row._key = `${tableName}.${this.generateRandomHash(12)}`;
 
 		return row;
 	}
@@ -91,6 +92,11 @@ export class MemoryApi extends DatabaseApi
 			this.setIdColumn(metaData.idColumns);
 	}
 
+
+	public hasLoadedDatabase(): boolean
+	{
+		return Object.keys(this.data).length > 0;
+	}
 
 	public getDatabase(): {_meta: TMetaData} & {[key: string]: any[]}
 	{
@@ -182,16 +188,26 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
-	async insertData(query: QueryRequest): Promise<(string | number)[] | any>
+	async insertData(query: QueryRequest): Promise<({_key: string | number, [key: string]: any})[]>
 	{
 		const table = this.getTable(query.table);
 		let data: any[] = JSON.parse(JSON.stringify(query.data));
-		let returnedData = this.assignAutoIncrementValuesForRecords(query.table, data);
+		let autoIncrements = this.assignAutoIncrementValuesForRecords(query.table, data),
+			aiColumn = this.getTableIdColumn(query.table)+'';
 
-		data = data.map(this.prepareRecord.bind(this, query.table));
+		data = <any[]>data.map(this.prepareRecord.bind(this, query.table));
 		table.push(...data);
 
-		return returnedData;
+		return data.map((row: TRow, i: number) => {
+			const responseRow = {
+				_key: row._key
+			};
+
+			if(autoIncrements)
+				responseRow[aiColumn] = autoIncrements[i];
+
+			return responseRow;
+		});
 	}
 
 
