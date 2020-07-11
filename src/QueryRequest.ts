@@ -65,7 +65,8 @@ export class QueryRequest
 		limit?: TLimit,
 		order?: TOrder,
 		data?: TData,
-		values?: TValues
+		values?: TValues,
+		cache?: boolean
 	})
 	{
 		for(let key in params)
