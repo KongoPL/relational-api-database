@@ -1,12 +1,35 @@
 import {DatabaseApi} from "../DatabaseApi";
 import {QueryRequest, EOrderType, TCondition, TLimit, TOrder} from "../QueryRequest";
 
+/**
+ * Basic API, where data is stored in memory (RAM)
+ * @class
+ */
 export class MemoryApi extends DatabaseApi
 {
+	/**
+	 * @private
+	 * @property {TMemoryApiDatabaseInternal}	Main database object
+	 */
 	private data: TMemoryApiDatabaseInternal = {};
+
+	/**
+	 * @private
+	 * @property {object}	List of columns to which Auto Increment is assigned. Key is table name, value is column name
+	 */
 	private idColumns: {[key: string]: string} = {};
+
+	/**
+	 * @private
+	 * @property {object}	Stores current auto increment values for tables. Key is table name, value is number or false if there is no AI
+	 */
 	private tablesAutoIncrements: {[key: string]: number | false} = {};
 
+
+	/**
+	 * @constructor
+	 * @param {TMemoryApiDatabase} data	Database in external format
+	 */
 	constructor(data?: TMemoryApiDatabase)
 	{
 		super();
@@ -16,6 +39,9 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
+	/**
+	 * @param {TMemoryApiDatabase} data	Database in external format
+	 */
 	public loadDatabase(data: TMemoryApiDatabase)
 	{
 		const dataCopy = JSON.parse(JSON.stringify(data));
@@ -34,6 +60,10 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
+	/**
+	 * @private
+	 * @param {object} data Database data, where key is table name, value is array of rows
+	 */
 	private loadData(data: any)
 	{
 		if(typeof data === 'object' && Array.isArray(data))
@@ -62,15 +92,27 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
-	private prepareRecord(tableName: string, row: TRow): TRow
+	/**
+	 * @private
+	 * @param {string} tableName
+	 * @param {TRow} record
+	 * @return {TRow}
+	 */
+	private prepareRecord(tableName: string, record: TRow): TRow
 	{
-		if(!('_key' in row))
-			row._key = `${tableName}.${this.generateRandomHash(12)}`;
+		if(!('_key' in record))
+			record._key = `${tableName}.${this.generateRandomHash(12)}`;
 
-		return row;
+		return record;
 	}
 
 
+	/**
+	 * @private
+	 * @param {number} length
+	 * @param {string[]} chars
+	 * @return {string}
+	 */
 	private generateRandomHash(length: number, chars = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890'): string
 	{
 		let hash = '';
@@ -86,6 +128,9 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
+	/**
+	 * @param {TMetaData} metaData
+	 */
 	private loadMeta(metaData: TMetaData)
 	{
 		if(typeof metaData.idColumns !== 'undefined')
@@ -93,12 +138,19 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
+	/**
+	 * @return {boolean}
+	 */
 	public hasLoadedDatabase(): boolean
 	{
 		return Object.keys(this.data).length > 0;
 	}
 
-	public getDatabase(): {_meta: TMetaData} & {[key: string]: any[]}
+
+	/**
+	 * @return {TMemoryApiDatabase}
+	 */
+	public getDatabase(): TMemoryApiDatabase
 	{
 		const dataCopy = JSON.parse(JSON.stringify(this.data));
 
@@ -117,6 +169,9 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
+	/**
+	 * @param {TIdColumns} idColumn
+	 */
 	public setIdColumn(idColumn: TIdColumns)
 	{
 		if(idColumn === false)
@@ -132,6 +187,9 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
+	/**
+	 * @private
+	 */
 	private obtainAutoIncrementsForTables()
 	{
 		this.tablesAutoIncrements = {};
@@ -156,6 +214,11 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
+	/**
+	 * @private
+	 * @param {string} tableName
+	 * @return {string|boolean} ID column if exists, false otherwise
+	 */
 	private getTableIdColumn(tableName: string): string | false
 	{
 		if(tableName in this.idColumns)
@@ -165,12 +228,23 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
+	/**
+	 * @async
+	 * @param {QueryRequest} query
+	 * @return {Promise<TRow[]>}
+	 */
 	async getData(query: QueryRequest): Promise<TRow[]>
 	{
 		return JSON.parse(JSON.stringify(await this.getDataInternal(query)));
 	}
 
 
+	/**
+	 * @protected
+	 * @async
+	 * @param {QueryRequest} query
+	 * @return {Promise<TRow[]>}
+	 */
 	protected async getDataInternal(query: QueryRequest): Promise<TRow[]>
 	{
 		let data = this.getTable(query.table);
@@ -188,6 +262,10 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
+	/**
+	 * @param {QueryRequest} query
+	 * @return {Promise<object[]>} Array of objects with properties to set for those objects.
+	 */
 	async insertData(query: QueryRequest): Promise<({_key: string | number, [key: string]: any})[]>
 	{
 		const table = this.getTable(query.table);
@@ -211,7 +289,7 @@ export class MemoryApi extends DatabaseApi
 	}
 
 
-	private assignAutoIncrementValuesForRecords(tableName: string, data: any[]): number[] | any
+	private assignAutoIncrementValuesForRecords(tableName: string, data: TRow[]): number[] | any
 	{
 		const idColumn = this.getTableIdColumn(tableName),
 			autoIncrements = this.getAutoIncrementForTable(tableName, data.length);
@@ -282,10 +360,11 @@ export class MemoryApi extends DatabaseApi
 		return tableName in this.data;
 	}
 
+
 	/**
-	 * @see https://www.yiiframework.com/doc/api/2.0/yii-db-queryinterface#where()-detail
+	 * @see https://www.yiiframework.com/doc/api/2.0/yii-db-queryinterface#where()-detail To know more about "condition" property
 	 */
-	private doesRecordMeetsConditions( record: any, condition: TCondition ): boolean
+	protected doesRecordMeetsConditions(record: any, condition: TCondition): boolean
 	{
 		if(Array.isArray(condition))
 		{
@@ -357,7 +436,7 @@ export class MemoryApi extends DatabaseApi
 		}
 		else
 		{
-			for (let field in condition)
+			for(let field in condition)
 			{
 				if(field in record === false)
 					throw new Error(`Field "${field}" does not exists in record!`);
@@ -367,7 +446,6 @@ export class MemoryApi extends DatabaseApi
 				return values.some((v) => v == record[field]);
 			}
 		}
-
 
 		return false;
 	}
@@ -413,23 +491,24 @@ export class MemoryApi extends DatabaseApi
 	}
 }
 
+
 export type TMemoryApiDatabase = {
-	_meta?: TMetaData,
 	[key: string]: {
 		[key: string]: any,
-	} | TMetaData | undefined
+	} | TMetaData
 }
 
 export type TMemoryApiDatabaseInternal = {
 	[key: string]: TRow[]
 }
 
-type TRow = {
+export type TRow = {
 	_key: string | number,
 	[key: string]: any,
 }
 
-type TIdColumns = string | false | {[key: string]: string};
+export type TIdColumns = string | false | {[key: string]: string};
+
 export type TMetaData = {
 	idColumns?: TIdColumns
 }

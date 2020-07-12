@@ -1,5 +1,5 @@
 import {Database} from "./Database";
-import {QueryRequest, TCondition, TLimit, TOrder} from "./QueryRequest";
+import {QueryRequest, TCondition, TLimit, TOrder, TQueryRequestProperties} from "./QueryRequest";
 
 export abstract class DatabaseDataObject<ModelClass>
 {
@@ -10,15 +10,18 @@ export abstract class DatabaseDataObject<ModelClass>
 	public _key: string = '';
 	public isNewRecord: boolean = true;
 
+
 	static injectDatabase(db: Database)
 	{
 		DatabaseDataObject.db = db;
 	}
 
+
 	static tableName(): string
 	{
 		throw new Error('Table name is not given!');
 	}
+
 
 	public async init(isNewRecord: boolean)
 	{
@@ -26,6 +29,7 @@ export abstract class DatabaseDataObject<ModelClass>
 
 		await this.fetchEagerRelations();
 	}
+
 
 	private async fetchEagerRelations(): Promise<any>
 	{
@@ -42,10 +46,12 @@ export abstract class DatabaseDataObject<ModelClass>
 		return;
 	}
 
-	protected relations(): TRelation
+
+	protected relations(): TRelations
 	{
 		return {};
 	}
+
 
 	protected unwantedAttributes(): string[]
 	{
@@ -55,6 +61,7 @@ export abstract class DatabaseDataObject<ModelClass>
 			'isNewRecord'
 		];
 	}
+
 
 	getAttributes(includeUnwanted: boolean = false): {[key: string]: any}
 	{
@@ -79,6 +86,7 @@ export abstract class DatabaseDataObject<ModelClass>
 		return Object.getOwnPropertyDescriptor(this, name)?.value;
 	}
 
+
 	hasAttribute(name: string): boolean
 	{
 		return this.hasOwnProperty(name) && !this.unwantedAttributes().includes(name);
@@ -91,6 +99,7 @@ export abstract class DatabaseDataObject<ModelClass>
 			this.setAttribute(key, attributes[key], safe);
 	}
 
+
 	setAttribute(name: string, value: string | number | bigint | boolean | object, safe: boolean = true)
 	{
 		if(typeof value === 'function')
@@ -102,7 +111,8 @@ export abstract class DatabaseDataObject<ModelClass>
 			throw new Error(`Attribute "${name}" does not exists in model!`);
 	}
 
-	public async getRelation(name: string, refresh: boolean = false): Promise<any>
+
+	async getRelation(name: string, refresh: boolean = false): Promise<any>
 	{
 		const relations = this.relations();
 
@@ -119,62 +129,11 @@ export abstract class DatabaseDataObject<ModelClass>
 		{
 			case ERelationType.ONE_ONE:
 			case ERelationType.ONE_MANY:
-				const attributes = {};
-
-				for (let key in relation.relation)
-				{
-					const destinationKey = relation.relation[key];
-
-					attributes[destinationKey] = this[key];
-				}
-
-				if(relation.type === ERelationType.ONE_ONE)
-					data = await relation.model.findOneByAttributes(attributes);
-				else
-					data = await relation.model.findByAttributes(attributes);
+				data = await this.fetchOneToRelation(relation)
 				break;
 
 			case ERelationType.MANY_MANY:
-				if(typeof relation.junctionModel === 'undefined' || typeof relation.junctionModel != 'string' || <any>relation.junctionModel instanceof DatabaseDataObject)
-					throw new Error('Many-to-Many relation requires "junctionModel" parameter to be string or DatabaseDataObject class!');
-
-				let leftRelation: [string, string] = ['', ''],
-					rightRelation: [string, string] = ['', ''],
-					hasMoreRelations = false;
-
-				// {my: their, their2: destination}
-				for(let key in relation.relation)
-				{
-					const destinationKey = relation.relation[key];
-
-					if(leftRelation[0] === '')
-						leftRelation = [key, destinationKey];
-					else if(rightRelation[0] === '')
-						rightRelation = [key, destinationKey];
-					else
-						hasMoreRelations = true;
-				}
-
-				if(hasMoreRelations || leftRelation[0] === '' || rightRelation[0] === '')
-					throw new Error(`Many-to-Many relation requires exactly 2 relations!`);
-
-				// Get junction table records:
-				const junctionTableName = typeof relation.junctionModel === 'string' ? relation.junctionModel : (<typeof DatabaseDataObject>relation.junctionModel).tableName(),
-					leftTableColumn = leftRelation[0],
-					middleTableLeftColumn = leftRelation[1],
-					middleTableRightColumn = rightRelation[0],
-					rightTableColumn = rightRelation[1];
-
-				const junctionData = await DatabaseDataObject.db.getData(new QueryRequest({
-					table: junctionTableName,
-					conditions: {
-						[middleTableLeftColumn]: this[leftTableColumn]
-					}
-				}));
-
-				data = await relation.model.findByAttributes({
-					[rightTableColumn]: junctionData.map((row) => row[middleTableRightColumn])
-				});
+				data = await this.fetchManyToManyRelation(relation);
 
 				break;
 		}
@@ -187,6 +146,71 @@ export abstract class DatabaseDataObject<ModelClass>
 
 		return data;
 	}
+
+
+	protected async fetchOneToRelation(relation: TRelation)
+	{
+		const attributes = {};
+
+		for (let key in relation.relation)
+		{
+			const destinationKey = relation.relation[key];
+
+			attributes[destinationKey] = this[key];
+		}
+
+		if(relation.type === ERelationType.ONE_ONE)
+			return await relation.model.findOneByAttributes(attributes);
+		else
+			return await relation.model.findByAttributes(attributes);
+	}
+
+
+	protected async fetchManyToManyRelation(relation: TRelation)
+	{
+		if(typeof relation.junctionModel === 'undefined' || typeof relation.junctionModel != 'string' || <any>relation.junctionModel instanceof DatabaseDataObject)
+			throw new Error('Many-to-Many relation requires "junctionModel" parameter to be string or DatabaseDataObject class!');
+
+		let leftRelation: [string, string] = ['', ''],
+			rightRelation: [string, string] = ['', ''],
+			hasMoreRelations = false;
+
+		// {my: their, their2: destination}
+		for(let key in relation.relation)
+		{
+			const destinationKey = relation.relation[key];
+
+			if(leftRelation[0] === '')
+				leftRelation = [key, destinationKey];
+			else if(rightRelation[0] === '')
+				rightRelation = [key, destinationKey];
+			else
+				hasMoreRelations = true;
+		}
+
+		if(hasMoreRelations || leftRelation[0] === '' || rightRelation[0] === '')
+			throw new Error(`Many-to-Many relation requires exactly 2 relations!`);
+
+		// Get junction table records:
+		const junctionTableName = typeof relation.junctionModel === 'string' ? relation.junctionModel : (<typeof DatabaseDataObject>relation.junctionModel).tableName(),
+			leftTableColumn = leftRelation[0],
+			middleTableLeftColumn = leftRelation[1],
+			middleTableRightColumn = rightRelation[0],
+			rightTableColumn = rightRelation[1];
+
+		const junctionData = await DatabaseDataObject.db.getData(new QueryRequest({
+			table: junctionTableName,
+			conditions: {
+				[middleTableLeftColumn]: this[leftTableColumn]
+			}
+		}));
+
+
+		return await relation.model.findByAttributes({
+			[rightTableColumn]: junctionData.map((row) => row[middleTableRightColumn])
+		});
+	}
+
 
 	public hasRelation(name: string, obtained: boolean = true)
 	{
@@ -228,19 +252,13 @@ export abstract class DatabaseDataObject<ModelClass>
 		}).then(data => data.length > 0 ? data[0] : null);
 	}
 
-
-	static async find(params: {
-		conditions?: TCondition,
-		limit?: TLimit,
-		order?: TOrder
-		// @ts-ignore
-	} = {}): Promise<ModelClass[]>
+	// @ts-ignore
+	static async find(params: TQueryRequestProperties): Promise<ModelClass[]>
 	{
 		const request = new QueryRequest({
 			...params,
 			table: this.tableName(),
 		});
-
 		const models = (await DatabaseDataObject.db.getData(request))
 			.map((v) => {
 				// @ts-ignore
@@ -253,6 +271,7 @@ export abstract class DatabaseDataObject<ModelClass>
 		const initPromises = models.map(v => v.init(false));
 
 		await Promise.all(initPromises);
+
 
 		return models;
 	}
@@ -305,6 +324,7 @@ export abstract class DatabaseDataObject<ModelClass>
 
 		this.afterSave(returnPromise);
 
+
 		return returnPromise;
 	}
 
@@ -337,13 +357,14 @@ export abstract class DatabaseDataObject<ModelClass>
 	protected afterSave(promise: Promise<(string | number)[] | any>): void {}
 }
 
-export type TRelation = {[key: string]: IRelation};
+
+export type TRelations = {[key: string]: TRelation};
 
 /**
  * @param junctionModel	Model class or table name
  * @param loading		Relation loading type (eager or lazy). default: lazy
  */
-export interface IRelation {
+export type TRelation = {
 	type: ERelationType | number,
 	model: typeof DatabaseDataObject,
 	relation: {[key: string]: string},

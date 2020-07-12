@@ -59,12 +59,14 @@ export class QueryRequest
 		}
 	};
 
+
 	constructor(params?: TQueryRequestProperties)
 	{
 		for(let key in params)
 			if(this.hasOwnProperty(key))
 				this[key] = params[key];
 	}
+
 
 	public validate(queryType?: TQueryType): true | string
 	{
@@ -163,13 +165,15 @@ export class QueryRequest
 		return true;
 	}
 
+
 	public hasConditions()
 	{
 		return (typeof this.conditions === 'object' && Array.isArray(this.conditions) && this.conditions.length > 0
 			|| typeof this.conditions === 'object' && !Array.isArray(this.conditions));
 	}
 
-	private checkCondition(condition): true | string
+
+	protected checkCondition(condition): true | string
 	{
 		if(typeof condition != 'object')
 			return 'Condition is not an object!';
@@ -226,14 +230,10 @@ export class QueryRequest
 				else if(['>', '>=', '<', '<=', '=', '!='].some(v => v == operator))
 				{
 					if(['number', 'bigint', 'string', 'boolean'].some((v) => v == typeof condition[2]) == false)
-					{
 						return 'Value is invalid!';
-					}
 				}
 				else
-				{
 					return `Unknown operator: "${operator}"!`;
-				}
 			}
 		}
 		else
@@ -246,6 +246,7 @@ export class QueryRequest
 
 		return true;
 	}
+
 
 	protected checkObjectOfValues(object: any): true | string
 	{
@@ -261,12 +262,14 @@ export class QueryRequest
 
 			if(Array.isArray(value))
 				for(let subvalue of value)
-					   if(['undefined', 'symbol', 'function'].some((v) => v == typeof subvalue))
+					if(['undefined', 'symbol', 'function'].some((v) => v == typeof subvalue))
 						return `Subvalue can't be ${typeof value}!`;
 		}
 
+
 		return true;
 	}
+
 
 	 public hasLimit()
 	 {
@@ -390,6 +393,17 @@ export class QueryRequest
 	}
 }
 
+
+function isNumeric(v, allowFloatValue = true)
+{
+	return ['string', 'number'].some((v2) => v2 === typeof v)
+		&& (
+			allowFloatValue && /^[0-9]+(\.[0-9]+|)$/.test(v+'')
+			|| !allowFloatValue && /^[0-9]+$/.test(v+'')
+		);
+}
+
+
 export type TQueryRequestProperties = {
 	table?: string,
 	conditions?: TCondition,
@@ -441,12 +455,3 @@ type TValidationChecks = {
 export type TLimit = [(number|string)?, (number|string)?];
 export type TOrder = {[key:string]: EOrderType | 'asc' | 'desc'};
 export type TData = {[key: string]: any}[];
-
-function isNumeric(v, allowFloatValue = true)
-{
-	return ['string', 'number'].some((v2) => v2 === typeof v)
-		&& (
-			allowFloatValue && /^[0-9]+(\.[0-9]+|)$/.test(v+'')
-			|| !allowFloatValue && /^[0-9]+$/.test(v+'')
-		);
-}

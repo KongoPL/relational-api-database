@@ -1,4 +1,4 @@
-import {ERelationLoadingType, ERelationType, TRelation} from "../../src/DatabaseDataObject";
+import {ERelationLoadingType, ERelationType, TRelations} from "../../src/DatabaseDataObject";
 import {City} from "./City";
 import {MyDatabaseDataObject} from "./MyDatabaseDataObject";
 import {Currency} from "./Currency";
@@ -23,7 +23,7 @@ export class User extends MyDatabaseDataObject<User>
 		return 'users';
 	}
 
-	relations(): TRelation
+	relations(): TRelations
 	{
 		return {
 			city: {

@@ -62,17 +62,6 @@ describe('Query request table name checks', () =>
 
 describe('Query request filtering checks', () =>
 {
-	test('Filtering by null object fails', () =>
-	{
-		const request = new QueryRequest({
-			table: 'any',
-			// @ts-ignore
-			conditions: null
-		});
-
-		expect(request.validate()).not.toStrictEqual(true);
-	});
-
 	test('Filtering with no value fails', () =>
 	{
 		const operators: string[] = [
@@ -512,10 +501,6 @@ describe('Query request data inserting checks', () =>
 		request.data[0] = () => {};
 
 		expect(request.validate()).not.toStrictEqual(true);
-
-		request.data = null;
-
-		expect(request.validate()).not.toStrictEqual(true);
 	});
 });
 
@@ -551,10 +536,5 @@ describe('Query request data updating checks', () =>
 
 			expect(request.validate()).not.toStrictEqual(true);
 		}
-
-		// @ts-ignore
-		request.value = null;
-
-		expect(request.validate()).not.toStrictEqual(true);
 	});
 });

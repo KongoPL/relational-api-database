@@ -11,6 +11,7 @@ export class Database
 		this.enableCache = (typeof this._cache !== 'undefined');
 	}
 
+
 	set cache(cache: DatabaseCache | false)
 	{
 		this.enableCache = !!cache;
@@ -21,10 +22,12 @@ export class Database
 			delete this.cache;
 	}
 
+
 	get cache(): DatabaseCache | false
 	{
 		return this._cache ? this._cache : false;
 	}
+
 
 	async getData(query: QueryRequest | TQueryRequestProperties): Promise<any[]>
 	{
@@ -48,6 +51,7 @@ export class Database
 		return response;
 	}
 
+
 	insertData(query: QueryRequest | TQueryRequestProperties): Promise<(string | number)[] | any>
 	{
 		let preparedQuery = this.prepareQuery(query);
@@ -68,6 +72,7 @@ export class Database
 		});
 	}
 
+
 	updateData(query: QueryRequest | TQueryRequestProperties): Promise<any>
 	{
 		let preparedQuery = this.prepareQuery(query);
@@ -78,15 +83,18 @@ export class Database
 		});
 	}
 
+
 	deleteData(query: QueryRequest | TQueryRequestProperties): Promise<any>
 	{
 		let preparedQuery = this.prepareQuery(query);
 
-		return this.validateQuery('delete', preparedQuery) && this.api.deleteData(preparedQuery).then(async () => {
-			if(this._cache)
-				await this._cache.deleteData(preparedQuery);
-		});
+		return this.validateQuery('delete', preparedQuery)
+			&& this.api.deleteData(preparedQuery).then(async () => {
+				if(this._cache)
+					await this._cache.deleteData(preparedQuery);
+			});
 	}
+
 
 	protected prepareQuery(query: QueryRequest | TQueryRequestProperties): QueryRequest
 	{
@@ -95,6 +103,7 @@ export class Database
 		else
 			return new QueryRequest(query);
 	}
+
 
 	protected validateQuery(type: 'select' | 'update' | 'delete' | 'insert', query: QueryRequest): true
 	{
