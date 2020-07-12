@@ -1,6 +1,6 @@
 import {DatabaseApi} from "./DatabaseApi";
 import {DatabaseCache} from "./DatabaseCache";
-import {QueryRequest} from "./QueryRequest";
+import {QueryRequest, TQueryRequestProperties} from "./QueryRequest";
 
 export class Database
 {
@@ -26,34 +26,38 @@ export class Database
 		return this._cache ? this._cache : false;
 	}
 
-	async getData(query: QueryRequest): Promise<any[]>
+	async getData(query: QueryRequest | TQueryRequestProperties): Promise<any[]>
 	{
-		this.validateQuery('select', query);
+		let preparedQuery = this.prepareQuery(query);
+
+		this.validateQuery('select', preparedQuery);
 
 		if(this._cache)
 		{
 			if(this._cache.hasCachedDatabase())
-				return await this._cache.getData(query);
-			else if(query.cache && this._cache.hasCachedQuery('select', query))
-				return this._cache.getQueryOutput('select', query);
+				return await this._cache.getData(preparedQuery);
+			else if(preparedQuery.cache && this._cache.hasCachedQuery('select', preparedQuery))
+				return this._cache.getQueryOutput('select', preparedQuery);
 		}
 
-		const response = await this.api.getData(query);
+		const response = await this.api.getData(preparedQuery);
 
-		if(this._cache && query.cache)
-			this._cache.cacheQuery('select', query, response);
+		if(this._cache && preparedQuery.cache)
+			this._cache.cacheQuery('select', preparedQuery, response);
 
 		return response;
 	}
 
-	insertData(query: QueryRequest): Promise<(string | number)[] | any>
+	insertData(query: QueryRequest | TQueryRequestProperties): Promise<(string | number)[] | any>
 	{
-		this.validateQuery('insert', query);
+		let preparedQuery = this.prepareQuery(query);
 
-		return this.api.insertData(query).then(async (response) => {
+		this.validateQuery('insert', preparedQuery);
+
+		return this.api.insertData(preparedQuery).then(async (response) => {
 			if(this._cache)
 			{
-				const cacheRequest = new QueryRequest(query.toObject());
+				const cacheRequest = new QueryRequest(preparedQuery.toObject());
 
 				for(let i in cacheRequest.data)
 					for(let key in response[i])
@@ -64,23 +68,35 @@ export class Database
 		});
 	}
 
-	updateData(query: QueryRequest): Promise<any>
+	updateData(query: QueryRequest | TQueryRequestProperties): Promise<any>
 	{
-		return this.validateQuery('update', query) && this.api.updateData(query).then(async () => {
+		let preparedQuery = this.prepareQuery(query);
+
+		return this.validateQuery('update', preparedQuery) && this.api.updateData(preparedQuery).then(async () => {
 			if(this._cache)
-				await this._cache.updateData(query);
+				await this._cache.updateData(preparedQuery);
 		});
 	}
 
-	deleteData(query: QueryRequest): Promise<any>
+	deleteData(query: QueryRequest | TQueryRequestProperties): Promise<any>
 	{
-		return this.validateQuery('delete', query) && this.api.deleteData(query).then(async () => {
+		let preparedQuery = this.prepareQuery(query);
+
+		return this.validateQuery('delete', preparedQuery) && this.api.deleteData(preparedQuery).then(async () => {
 			if(this._cache)
-				await this._cache.deleteData(query);
+				await this._cache.deleteData(preparedQuery);
 		});
 	}
 
-	private validateQuery(type: 'select' | 'update' | 'delete' | 'insert', query: QueryRequest): true
+	protected prepareQuery(query: QueryRequest | TQueryRequestProperties): QueryRequest
+	{
+		if(query instanceof QueryRequest)
+			return query;
+		else
+			return new QueryRequest(query);
+	}
+
+	protected validateQuery(type: 'select' | 'update' | 'delete' | 'insert', query: QueryRequest): true
 	{
 		const isQueryValid = query.validate(type);
 

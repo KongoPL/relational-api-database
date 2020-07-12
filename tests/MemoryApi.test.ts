@@ -49,6 +49,9 @@ describe('Database data loading tests', () => {
 				}
 			]
 		})).toThrow();
+
+		// @ts-ignore
+		expect(() => memoryDb.loadDatabase(null)).toThrow();
 	});
 });
 

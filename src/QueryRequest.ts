@@ -59,15 +59,7 @@ export class QueryRequest
 		}
 	};
 
-	constructor(params?: {
-		table?: string,
-		conditions?: TCondition,
-		limit?: TLimit,
-		order?: TOrder,
-		data?: TData,
-		values?: TValues,
-		cache?: boolean
-	})
+	constructor(params?: TQueryRequestProperties)
 	{
 		for(let key in params)
 			if(this.hasOwnProperty(key))
@@ -397,6 +389,16 @@ export class QueryRequest
 		return JSON.stringify(this.toObject());
 	}
 }
+
+export type TQueryRequestProperties = {
+	table?: string,
+	conditions?: TCondition,
+	limit?: TLimit,
+	order?: TOrder,
+	data?: TData,
+	values?: TValues,
+	cache?: boolean
+};
 
 export enum EOrderType
 {

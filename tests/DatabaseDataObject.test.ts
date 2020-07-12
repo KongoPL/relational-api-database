@@ -74,6 +74,12 @@ describe('Attributes management', () => {
 				firstName: () => {}
 			});
 		}).toThrowError();
+
+		expect(() =>
+		{
+			// @ts-ignore
+			user.setAttributes(null);
+		}).toThrowError();
 	});
 
 	test('Checking attributes existence works', () => {
@@ -121,6 +127,18 @@ describe('Finding data', () =>
 			}
 		})
 			.catch(fail);
+	});
+
+	test('Finding by wrong attributes fails', async ()  =>
+	{
+		await User.findByAttributes({
+			notexistingattribute: false
+		}).then(fail)
+			.catch(() => expect(true).toBe(true));
+
+		// @ts-ignore
+		await User.findByAttributes(null).then(fail)
+			.catch(() => expect(true).toBe(true));
 	});
 });
 
