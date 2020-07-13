@@ -130,6 +130,49 @@ describe('Finding data', () =>
 		}).then(fail)
 			.catch(() => expect(true).toBe(true));
 	});
+
+	test('Injecting eagerly loaded relation by API works', async () =>
+	{
+		const fakeDb: any = new class
+		{
+			async getData()
+			{
+				return [{
+					_key: 'Hello World :)',
+					id: 15,
+					firstName: 'John',
+					lastName: 'Doe',
+					age: 99,
+
+					city: {
+						id: 999,
+						name: 'MOCKED!'
+					}
+				}];
+			}
+		};
+
+		DatabaseDataObject.injectDatabase(fakeDb);
+		const user = await User.findById(55);
+
+		try
+		{
+			expect(user.id).toBe(15);
+			expect(user._key).toBe('Hello World :)');
+			expect(user.city).not.toBeNull();
+			expect(user.city).toBeInstanceOf(City);
+
+			// @ts-ignore
+			expect(user.city.id).toBe(999);
+
+			// @ts-ignore
+			expect(user.city.name).toBe('MOCKED!');
+		}
+		catch(e)
+		{
+			fail(e);
+		}
+	});
 });
 
 describe('Relations', () => {

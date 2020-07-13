@@ -138,13 +138,19 @@ export abstract class DatabaseDataObject<ModelClass>
 				break;
 		}
 
-		if(this.hasRelation(name, false))
-			this[name] = data;
-
-		if(!this.obtainedRelations.includes(name))
-			this.obtainedRelations.push(name);
+		if(this.hasRelation(name))
+			this.setRelation(name, data);
 
 		return data;
+	}
+
+
+	setRelation(relationName: string, data: typeof DatabaseDataObject)
+	{
+		this[relationName] = data;
+
+		if(!this.obtainedRelations.includes(relationName))
+			this.obtainedRelations.push(relationName);
 	}
 
 
@@ -260,11 +266,29 @@ export abstract class DatabaseDataObject<ModelClass>
 			table: this.tableName(),
 		});
 		const models = (await DatabaseDataObject.db.getData(request))
-			.map((v) => {
+			.map((apiRowData) => {
 				// @ts-ignore
 				const model = <ModelClass>(new this());
 
-				model.setAttributes(v);
+				model.setAttributes(apiRowData, false);
+
+				// Eager model loading by API check:
+				// @todo Make eager relation loading by API recursive
+				const relations = model.relations();
+
+				for(let property in relations)
+				{
+					const relation = relations[property];
+
+					if(property in apiRowData === false)
+						continue;
+
+					const relationModel = new relation.model();
+
+					relationModel.setAttributes(apiRowData[property]);
+
+					model.setRelation(property, relationModel);
+				}
 
 				return model;
 			});
