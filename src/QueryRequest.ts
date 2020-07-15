@@ -11,55 +11,6 @@ export class QueryRequest
 
 	public cache: boolean = true;
 
-	protected validationChecks: TValidationChecks = {
-		select: {
-			table: true,
-			conditions: 'optional',
-			limit: 'optional',
-			order: 'optional',
-			data: false,
-			values: false,
-			cache: true,
-		},
-		insert: {
-			table: true,
-			conditions: false,
-			limit: false,
-			order: false,
-			data: true,
-			values: false,
-			cache: true,
-		},
-		update: {
-			table: true,
-			conditions: 'optional',
-			limit: 'optional',
-			order: false,
-			data: false,
-			values: true,
-			cache: true,
-		},
-		delete: {
-			table: true,
-			conditions: 'optional',
-			limit: 'optional',
-			order: false,
-			data: false,
-			values: false,
-			cache: true,
-		},
-		any: {
-			table: true,
-			conditions: 'optional',
-			limit: 'optional',
-			order: 'optional',
-			data: 'optional',
-			values: 'optional',
-			cache: true,
-		}
-	};
-
-
 	constructor(params?: TQueryRequestProperties)
 	{
 		for(let key in params)
@@ -68,10 +19,93 @@ export class QueryRequest
 	}
 
 
+	protected getQueryValidationRules(): TValidationRules
+	{
+		return {
+			select: {
+				table: true,
+				conditions: 'optional',
+				limit: 'optional',
+				order: 'optional',
+				data: false,
+				values: false,
+				cache: true,
+			},
+			insert: {
+				table: true,
+				conditions: false,
+				limit: false,
+				order: false,
+				data: true,
+				values: false,
+				cache: true,
+			},
+			update: {
+				table: true,
+				conditions: 'optional',
+				limit: 'optional',
+				order: false,
+				data: false,
+				values: true,
+				cache: true,
+			},
+			delete: {
+				table: true,
+				conditions: 'optional',
+				limit: 'optional',
+				order: false,
+				data: false,
+				values: false,
+				cache: true,
+			},
+			any: {
+				table: true,
+				conditions: 'optional',
+				limit: 'optional',
+				order: 'optional',
+				data: 'optional',
+				values: 'optional',
+				cache: true,
+			}
+		};
+	}
+
+
+	/**
+	 * This method may be modified when your API supports different data types than default ones.
+	 */
+	protected getSupportedDataTypes(): Array<string | ((value: any) => boolean)>
+	{
+		return [
+			'number',
+			'bigint',
+			'string',
+			'boolean',
+			// Array.isArray,
+			(v) => v === null,
+
+		];
+	}
+
+
+	protected isValueTypeSupported(value: any): boolean
+	{
+		return this.getSupportedDataTypes().some((type) =>
+		{
+			if(typeof type != 'string' && typeof type != 'function')
+				throw new Error('Supported data type should be string or function!')
+
+			return (typeof type === 'string' && typeof value === type
+				// @ts-ignore
+				|| typeof type === 'function' && type(value))
+		});
+	}
+
+
 	public validate(queryType?: TQueryType): true | string
 	{
-		// @ts-ignore type "any" exists, but it cant't see it, even when defined properly.
-		const checkedValues = queryType ? this.validationChecks[queryType] : this.validationChecks.any;
+		const validationRules = this.getQueryValidationRules();
+		const checkedValues = queryType ? validationRules[queryType] : validationRules.any;
 
 		if(checkedValues.table)
 		{
@@ -229,7 +263,7 @@ export class QueryRequest
 				}
 				else if(['>', '>=', '<', '<=', '=', '!='].some(v => v == operator))
 				{
-					if(['number', 'bigint', 'string', 'boolean'].some((v) => v == typeof condition[2]) == false)
+					if(this.isValueTypeSupported(condition[2]) === false)
 						return 'Value is invalid!';
 				}
 				else
@@ -254,16 +288,13 @@ export class QueryRequest
 		{
 			const value = object[field];
 
-			if(typeof value === 'object' && !Array.isArray(value) && value !== null)
-				return `Value can't be an object!`;
-
-			if(['undefined', 'symbol', 'function'].some((v) => v == typeof value))
+			if(this.isValueTypeSupported(value) === false)
 				return `Value can't be ${typeof value}!`;
 
 			if(Array.isArray(value))
 				for(let subvalue of value)
-					if(['undefined', 'symbol', 'function'].some((v) => v == typeof subvalue))
-						return `Subvalue can't be ${typeof value}!`;
+					if(this.isValueTypeSupported(subvalue) === false)
+						return `Sub value can't be ${typeof value}!`;
 		}
 
 
@@ -331,10 +362,8 @@ export class QueryRequest
 				return 'Row can be only strict object!';
 
 			for(let key in row)
-			{
-				if(typeof row[key] === 'function')
-					return `Value in row can't be a function!`;
-			}
+				if(this.isValueTypeSupported(row[key]) === false)
+					return `Value can't be ${typeof row[key]}!`;
 		}
 
 		return true;
@@ -353,8 +382,8 @@ export class QueryRequest
 		 {
 			 const value = this.values[field];
 
-			 if(['undefined', 'symbol', 'function'].some((v) => v == typeof value))
-				 return `Value can't be ${typeof value}!`
+			 if(this.isValueTypeSupported(value) === false)
+				 return `Value can't be ${typeof value}!`;
 		 }
 
 		 return true;
@@ -365,6 +394,7 @@ export class QueryRequest
 	{
 		return typeof this.cache !== 'undefined';
 	}
+
 
 	public checkCache(): true | string
 	{
@@ -440,8 +470,8 @@ export type TCondition = [
 type TQueryType = 'select' | 'update' | 'delete' | 'insert';
 type TConditionParameters = {[key: string]: string | number | boolean | bigint | string[] | number[] | boolean[] | bigint[]} | {};
 type TValues = {[key: string]: string | number | boolean | bigint} | {};
-type TValidationChecks = {
-	[key in (TQueryType & 'any')]: {
+type TValidationRules = {
+	[key in (TQueryType | 'any')]: {
 		table: boolean | 'optional',
 		conditions: boolean | 'optional',
 		limit: boolean | 'optional',

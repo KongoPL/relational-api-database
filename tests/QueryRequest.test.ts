@@ -237,7 +237,6 @@ describe('Query request filtering checks', () =>
 				{},
 				[],
 				undefined,
-				null,
 				() => {}
 			]);
 		});
@@ -416,22 +415,10 @@ describe('Query request data inserting checks', () =>
 					id: 1,
 					name: 'John',
 					isAdmin: true,
-					nameChars: [
-						'J', 'o', 'h', 'n'
-					],
-					dates: {
-						firstLogin: "2020-06-11 11:41:00"
-					}
 				}, {
 					id: 1,
 					name: 'Susan',
 					isAdmin: true,
-					nameChars: [
-						'S', 'u', 's', 'a', 'n'
-					],
-					dates: {
-						firstLogin: "2020-06-11 11:42:00"
-					}
 				}
 			]
 		});
@@ -514,8 +501,6 @@ describe('Query request data updating checks', () =>
 				name: 'Anna',
 				age: 500,
 				exists: true,
-				arrayData: [],
-				objectData: {}
 			}
 		});
 
