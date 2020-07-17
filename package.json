@@ -1,16 +1,40 @@
 {
-	"scripts": {
-		"test": "jest",
-		"test-watch": "jest --watch",
-		"clear-test-cache": "jest --clearCache"
-	},
-	"devDependencies": {
-		"@types/jest": "^25.2.1",
-		"jest": "^25.4.0",
-		"standard-version": "^8.0.2",
-		"ts-jest": "^25.4.0"
-	},
-	"dependencies": {
-		"typescript": "^3.8.3"
-	}
+  "name": "relational-api-database",
+  "description": "Relational database that allows you to manage data returned by API into models",
+  "version": "1.0.1",
+  "homepage": "https://github.com/KongoPL/relational-api-database",
+  "bugs": {
+    "url": "https://github.com/KongoPL/relational-api-database/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KongoPL/relational-api-database.git"
+  },
+  "keywords": [
+    "relational",
+    "api",
+    "database",
+    "models",
+    "management"
+  ],
+  "author": "Jakub Poliszuk",
+  "license": "ISC",
+  "files": [
+    "src/**"
+  ],
+  "scripts": {
+    "test": "jest",
+    "test-watch": "jest --watch",
+    "clear-test-cache": "jest --clearCache",
+    "release": "standard-version"
+  },
+  "devDependencies": {
+    "@types/jest": "^25.2.1",
+    "jest": "^25.4.0",
+    "standard-version": "^8.0.2",
+    "ts-jest": "^25.4.0"
+  },
+  "dependencies": {
+    "typescript": "^3.8.3"
+  }
 }
