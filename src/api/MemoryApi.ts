@@ -100,7 +100,7 @@ export class MemoryApi extends DatabaseApi
 	 */
 	private prepareRecord(tableName: string, record: TRow): TRow
 	{
-		if(!('_key' in record))
+		if(!('_key' in record) || typeof record._key != 'string' || record._key == '')
 			record._key = `${tableName}.${this.generateRandomHash(12)}`;
 
 		return record;

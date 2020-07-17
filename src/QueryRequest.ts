@@ -81,16 +81,31 @@ export class QueryRequest
 			'bigint',
 			'string',
 			'boolean',
-			// Array.isArray,
+			Array.isArray,
 			(v) => v === null,
-
 		];
 	}
 
 
-	protected isValueTypeSupported(value: any): boolean
+	/**
+	 * This method may be modified when your API supports different data types than default ones.
+	 */
+	protected getSupportedComparisionDataTypes(): Array<string | ((value: any) => boolean)>
 	{
-		return this.getSupportedDataTypes().some((type) =>
+		return [
+			'number',
+			'bigint',
+			'string',
+			'boolean',
+		];
+	}
+
+
+	protected isValueTypeSupported(value: any, isUsedInComparision: boolean = false): boolean
+	{
+		const types = (isUsedInComparision ? this.getSupportedComparisionDataTypes() : this.getSupportedDataTypes());
+
+		return types.some((type) =>
 		{
 			if(typeof type != 'string' && typeof type != 'function')
 				throw new Error('Supported data type should be string or function!')
@@ -263,7 +278,7 @@ export class QueryRequest
 				}
 				else if(['>', '>=', '<', '<=', '=', '!='].some(v => v == operator))
 				{
-					if(this.isValueTypeSupported(condition[2]) === false)
+					if(this.isValueTypeSupported(condition[2], true) === false)
 						return 'Value is invalid!';
 				}
 				else
@@ -288,7 +303,7 @@ export class QueryRequest
 		{
 			const value = object[field];
 
-			if(this.isValueTypeSupported(value) === false)
+			if(this.isValueTypeSupported(value) === false && !Array.isArray(value))
 				return `Value can't be ${typeof value}!`;
 
 			if(Array.isArray(value))

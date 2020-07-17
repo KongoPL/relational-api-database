@@ -9,7 +9,7 @@ import {Currency} from "./data-types/Currency";
 
 let db: Database;
 
-beforeAll(() => {
+beforeEach(() => {
 	const memoryApi = new MemoryApi();
 	db = new Database(memoryApi);
 

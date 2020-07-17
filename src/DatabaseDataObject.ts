@@ -138,7 +138,7 @@ export abstract class DatabaseDataObject<ModelClass>
 				break;
 		}
 
-		if(this.hasRelation(name))
+		if(this.hasRelation(name, false))
 			this.setRelation(name, data);
 
 		return data;

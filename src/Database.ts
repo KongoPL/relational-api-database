@@ -69,6 +69,8 @@ export class Database
 
 				await this._cache.insertData(cacheRequest);
 			}
+
+			return response;
 		});
 	}
 

@@ -13,7 +13,7 @@ let db: Database,
 	memoryApi: MemoryApi,
 	memoryCache: MemoryCache;
 
-beforeAll(() => {
+beforeEach(() => {
 	memoryApi = new MemoryApi();
 	memoryCache = new MemoryCache();
 

@@ -626,9 +626,12 @@ describe('Data inserting', () =>
 
 			expect(recordIds).toBeInstanceOf(Array);
 			expect(recordIds.length).toBe(1);
-			expect(recordIds[0]).not.toBe(555); // Because of AI
+			expect(recordIds[0]).toBeInstanceOf(Object);
+			expect(recordIds[0].id).toBeDefined(); // Because of AI
+			expect(recordIds[0]._key).toBeDefined(); // Because of AI
+			expect(recordIds[0].id).not.toBe(555); // Because of AI
 
-			const userId = recordIds[0];
+			const userId = recordIds[0].id;
 
 			const users = await memoryDb.getData(new QueryRequest({
 				table: 'users',
@@ -664,8 +667,9 @@ describe('Data inserting', () =>
 		{
 			const recordIds = await memoryDb.insertData(request);
 
-			expect(recordIds).not.toBeInstanceOf(Array);
-			expect(recordIds).not.toBeDefined();
+			expect(recordIds).toBeInstanceOf(Array);
+			expect(recordIds[0]).toBeInstanceOf(Object);
+			expect(recordIds[0]._key).toBeDefined();
 
 			const cities = await memoryDb.getData(new QueryRequest({
 				table: 'cities',
