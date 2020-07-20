@@ -1,7 +1,7 @@
 {
   "name": "relational-api-database",
   "description": "Relational database that allows you to manage data returned by API into models",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "homepage": "https://github.com/KongoPL/relational-api-database",
   "bugs": {
     "url": "https://github.com/KongoPL/relational-api-database/issues"
@@ -17,8 +17,9 @@
     "models",
     "management"
   ],
-  "author": "Jakub Poliszuk",
+  "author": "Jakub Poliszuk <kongocode@gmail.com>",
   "license": "ISC",
+  "main": "src/index.ts",
   "files": [
     "src/**"
   ],
