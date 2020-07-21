@@ -2,10 +2,7 @@ import {User} from "./data-types/User";
 import {Database} from "../src/Database";
 import {MemoryApi} from "../src/api/MemoryApi";
 import {memoryApiDb} from "./mock-databases/MemoryApiDb";
-import {City} from "./data-types/City";
 import {QueryRequest} from "../src/QueryRequest";
-import {DatabaseDataObject} from "../src/DatabaseDataObject";
-import {Currency} from "./data-types/Currency";
 import {MemoryCache} from "../src/cache/MemoryCache";
 import {DatabaseCache} from "../src/DatabaseCache";
 
