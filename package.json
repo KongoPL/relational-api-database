@@ -1,7 +1,7 @@
 {
   "name": "relational-api-database",
   "description": "Relational database that allows you to manage data returned by API into models",
-  "version": "1.0.3",
+  "version": "1.0.0",
   "homepage": "https://github.com/KongoPL/relational-api-database",
   "bugs": {
     "url": "https://github.com/KongoPL/relational-api-database/issues"
@@ -19,14 +19,19 @@
   ],
   "author": "Jakub Poliszuk <kongocode@gmail.com>",
   "license": "ISC",
-  "main": "dist/index.js",
   "files": [
-    "dist/**"
+    "dist/**",
+    "index.js",
+    "index.d.js"
   ],
+  "main": "index.js",
+  "typings": "index.d.ts",
   "scripts": {
+    "build": "tsc --build ./tsconfig.json",
     "test": "jest",
     "test-watch": "jest --watch",
-    "clear-test-cache": "jest --clearCache",
+    "test-clear-cache": "jest --clearCache",
+    "test-coverage": "jest --coverage",
     "release": "standard-version"
   },
   "devDependencies": {
