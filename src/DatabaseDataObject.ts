@@ -249,17 +249,18 @@ export abstract class DatabaseDataObject<ModelClass>
 	static async findOne(params: {
 		conditions?: TCondition,
 		order?: TOrder
-		// @ts-ignore
-	} = {}): Promise<ModelClass>
+	} = {})
 	{
-		return this.find({
+		const data = await this.find({
 			...params,
 			limit: [0, 1]
-		}).then(data => data.length > 0 ? data[0] : null);
+		});
+
+		return data.length > 0 ? data[0] : null;
 	}
 
-	// @ts-ignore
-	static async find(params: TQueryRequestProperties): Promise<ModelClass[]>
+
+	static async find(params: TQueryRequestProperties)
 	{
 		const request = new QueryRequest({
 			...params,
