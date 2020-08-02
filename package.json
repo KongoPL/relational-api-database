@@ -32,7 +32,8 @@
     "test-watch": "jest --watch",
     "test-clear-cache": "jest --clearCache",
     "test-coverage": "jest --coverage",
-    "release": "standard-version"
+    "release": "standard-version",
+    "prepublish": "npm run test && npm run build"
   },
   "devDependencies": {
     "@types/jest": "^25.2.3",
