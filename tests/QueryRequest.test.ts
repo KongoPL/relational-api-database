@@ -477,6 +477,7 @@ describe('Query request data inserting checks', () =>
 
 		expect(request.validate()).not.toStrictEqual(true);
 
+		// @ts-ignore
 		request.data[0] = 'Hello';
 
 		expect(request.validate()).not.toStrictEqual(true);
