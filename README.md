@@ -31,7 +31,7 @@ There are 3 places that might be used as cache:
 * Web Storage (planned in future)
 
 ### Cross browser
-LOREM IPSUM DOLOR SIT AMET (@todo)
+@todo
 
 ### No dependencies
 There are no dependencies required to use library which makes it lightweight - 19.4kB!
@@ -40,9 +40,57 @@ There are no dependencies required to use library which makes it lightweight - 1
 `npm i relational-api-database`
 
 ## How to use
-(Here put simple example @todo)
+First, you need to setup whole database for usage. 
+To do that, in main component of your application (i.e. `src/App.tsx` for React or `src/app/app.module.ts` for Angular) you need to:
+* Declare API (and setup it if needed)
+* Create database object with API of your choice
+* Inject this database into base object of all Data Objects
+
+Example:
+```typescript
+import {Database, DatabaseDataObject, MemoryApi} from "relational-api-database";
+
+// Declare API:
+const memoryAPI = new MemoryApi();
+
+// Setup this API:
+memoryAPI.loadDatabase({
+	MyModels: [
+		{
+			id: 1,
+			name: 'John Doe'
+		}
+	]
+});
+
+// Create database object with chosen API:
+const db = new Database(memoryAPI);
+
+// Inject this database object to all models:
+DatabaseDataObject.injectDatabase(db);
+```
+To make it work, we need to have Data Object, which we will refer to records in declared table:
+```typescript
+class MyModel extends DatabaseDataObject<MyModel>
+{
+	public id: number = 0;
+	public name: string = '';
+
+	static tableName()
+	{
+		return 'MyModels';
+	}
+}
+```
+Now to get data we simply use this simple code:
+```typescript
+let model = await MyModel.findOneByAttributes({id: 1});
+
+console.log(model.name); // "John Doe"
+```
 
 ## Testing
 `npm run test`
 
 ## License
+[MIT](LICENSE)
