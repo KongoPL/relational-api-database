@@ -55,10 +55,13 @@ export abstract class DatabaseDataObject<ModelClass>
 
 	protected unwantedAttributes(): string[]
 	{
+		let relations = this.relations();
+		
 		return [
 			'db',
 			'obtainedRelations',
-			'isNewRecord'
+			'isNewRecord',
+			...Object.keys(relations)
 		];
 	}
 
@@ -260,7 +263,7 @@ export abstract class DatabaseDataObject<ModelClass>
 	}
 
 
-	static async find(params: TQueryRequestProperties)
+	static async find(params: TQueryRequestProperties = {})
 	{
 		const request = new QueryRequest({
 			...params,
