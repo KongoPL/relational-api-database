@@ -33,15 +33,19 @@ export abstract class DatabaseDataObject<ModelClass>
 
 	private async fetchEagerRelations(): Promise<any>
 	{
-		const relations = this.relations();
+		// @todo Batch loading relations (good for lots of models)
+		const relations = this.relations(),
+			promises: Promise<any>[] = [];
 
 		for(let name in relations)
 		{
 			const relation = relations[name];
 
 			if(relation.loading === ERelationLoadingType.EAGER)
-				await this.getRelation(name);
+				promises.push(this.getRelation(name));
 		}
+
+		await Promise.all(promises);
 
 		return;
 	}
@@ -252,7 +256,7 @@ export abstract class DatabaseDataObject<ModelClass>
 	static async findOne(params: {
 		conditions?: TCondition,
 		order?: TOrder
-	} = {})
+	} & TModelFindProperties = {})
 	{
 		const data = await this.find({
 			...params,
@@ -263,7 +267,7 @@ export abstract class DatabaseDataObject<ModelClass>
 	}
 
 
-	static async find(params: TQueryRequestProperties = {})
+	static async find(params: TQueryRequestProperties & TModelFindProperties = {})
 	{
 		const request = new QueryRequest({
 			...params,
@@ -278,6 +282,7 @@ export abstract class DatabaseDataObject<ModelClass>
 
 				// Eager model loading by API check:
 				// @todo Make eager relation loading by API recursive
+				// @todo Make tests for "with" property (part of TModelFindProperties)
 				const relations = model.relations();
 
 				for(let property in relations)
@@ -299,6 +304,20 @@ export abstract class DatabaseDataObject<ModelClass>
 		const initPromises = models.map(v => v.init(false));
 
 		await Promise.all(initPromises);
+
+		if(typeof params.with != 'undefined')
+		{
+			const relationsToLoad: string[] = (typeof params.with === 'string' ? [params.with] : params.with);
+			const promises: Promise<any>[] = [];
+
+			// @todo Batch loading relations (good for lots of models)
+
+			for(let model of models)
+				for(let relation of relationsToLoad)
+					promises.push(model.getRelation(relation));
+
+			await Promise.all(promises);
+		}
 
 
 		return models;
@@ -398,6 +417,10 @@ export type TRelation = {
 	relation: {[key: string]: string},
 	junctionModel?: typeof DatabaseDataObject | string,
 	loading?: ERelationLoadingType | 'lazy' | 'eager'
+}
+
+type TModelFindProperties = {
+	with?: string | string[]
 }
 
 export enum ERelationType {
