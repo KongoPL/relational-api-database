@@ -104,6 +104,19 @@ describe('Filtering data', () =>
 				expect(row.lastName).toBe('Doe');
 			}
 		});
+
+		test(`Record isn't selected when matches first condition `, async () =>
+		{
+			request.conditions = {
+				firstName: 'Jane',
+				lastName: 'Doe',
+				age: 99
+			};
+
+			const result = await memoryDb.getData(request);
+
+			expect(result.length).toEqual(0);
+		})
 	});
 
 	describe('Filtering by conditional operators', () =>

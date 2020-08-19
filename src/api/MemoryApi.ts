@@ -436,6 +436,8 @@ export class MemoryApi extends DatabaseApi
 		}
 		else
 		{
+			let meetsConditions = true;
+
 			for(let field in condition)
 			{
 				if(field in record === false)
@@ -443,11 +445,14 @@ export class MemoryApi extends DatabaseApi
 
 				const values = Array.isArray(condition[field]) ? condition[field] : [condition[field]];
 
-				return values.some((v) => v == record[field]);
+				meetsConditions = values.some((v) => v == record[field]);
+				
+				if(!meetsConditions)
+					break;
 			}
-		}
 
-		return false;
+			return meetsConditions;
+		}
 	}
 
 
